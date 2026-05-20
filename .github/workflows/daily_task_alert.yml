@@ -1,0 +1,31 @@
+name: 과제 마감 알림 (매일 09:00 KST)
+
+on:
+  schedule:
+    # UTC 00:00 = KST 09:00
+    - cron: "0 0 * * 1-5"    # 평일(월~금)
+  workflow_dispatch:           # GitHub Actions UI에서 수동 실행 가능
+
+jobs:
+  task-alert:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Python 설치
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 의존성 설치
+        run: pip install gspread google-auth requests
+
+      - name: 과제 관리 에이전트 실행
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_SPREADSHEET_ID:       ${{ secrets.GOOGLE_SPREADSHEET_ID }}
+          JANDI_WEBHOOK_URL:           ${{ secrets.JANDI_WEBHOOK_URL }}
+          SHEET_NAME:                  "과제목록"   # 시트 탭 이름 변경 시 여기도 수정
+        run: python agents/task_manager/run.py
