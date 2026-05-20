@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>동구밭 AI 과제 관리 에이전트</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+:root{
+  --green:#1D9E75;--green-light:#E1F5EE;--green-dark:#0F6E56;
+  --blue:#378ADD;--blue-light:#E6F1FB;
+  --red:#E24B4A;--red-light:#FCEBEB;
+  --amber:#EF9F27;--amber-light:#FAEEDA;
+  --purple:#6B30A8;--purple-light:#F3EBFA;
+  --bg:#ffffff;--bg2:#f6f6f4;--bg3:#f0f0ee;
+  --border:#e5e5e3;--border2:#d4d4d0;
+  --text:#1a1a18;--text2:#5f5e5a;--text3:#8c8b86;
+  --radius:10px;--radius-sm:6px;
+  --font:'Pretendard',-apple-system,'Malgun Gothic',sans-serif;
+  --mono:'JetBrains Mono','Fira Code',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--bg2);min-height:100vh;display:flex;flex-direction:column;}
+
+/* header */
+.header{background:var(--bg);border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.header-left{display:flex;align-items:center;gap:10px;}
+.logo{width:28px;height:28px;background:var(--green);border-radius:7px;display:flex;align-items:center;justify-content:center;}
+.logo i{color:#fff;font-size:15px;}
+.app-name{font-size:14px;font-weight:600;color:var(--text);}
+.app-sub{font-size:11px;color:var(--green);margin-top:1px;}
+.header-right{display:flex;align-items:center;gap:8px;}
+.conn-pill{display:flex;align-items:center;gap:6px;padding:5px 11px;border-radius:20px;font-size:11.5px;border:1px solid var(--border);background:var(--bg2);cursor:pointer;transition:all .15s;}
+.conn-pill:hover{border-color:var(--green);background:var(--green-light);}
+.conn-dot{width:7px;height:7px;border-radius:50%;background:#ccc;transition:background .3s;}
+.conn-dot.on{background:var(--green);box-shadow:0 0 6px rgba(29,158,117,.4);}
+.conn-dot.err{background:var(--red);}
+.conn-dot.loading{background:var(--amber);animation:pulse-dot 1s infinite;}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* layout */
+.main{flex:1;display:grid;grid-template-columns:240px 1fr;max-width:1100px;width:100%;margin:0 auto;padding:16px;gap:12px;}
+@media(max-width:700px){.main{grid-template-columns:1fr;}.sidebar{display:none;}}
+
+/* sidebar */
+.sidebar{display:flex;flex-direction:column;gap:8px;}
+.sb-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.sb-head{padding:10px 13px;border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);}
+.stat-item{background:var(--bg);padding:10px 12px;}
+.stat-n{font-size:20px;font-weight:600;color:var(--text);}
+.stat-l{font-size:10.5px;color:var(--text3);margin-top:2px;}
+.task-list-sb{padding:6px;}
+.sb-task{padding:7px 8px;border-radius:var(--radius-sm);cursor:pointer;transition:background .12s;margin-bottom:2px;}
+.sb-task:hover{background:var(--bg2);}
+.sb-task-name{font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;}
+.sb-task-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.tag{font-size:10px;padding:1px 6px;border-radius:8px;white-space:nowrap;}
+.t-mine{background:var(--green-light);color:var(--green-dark);}
+.t-del{background:var(--blue-light);color:#185FA5;}
+.t-urg{background:var(--red-light);color:#A32D2D;}
+.t-warn{background:var(--amber-light);color:#854F0B;}
+.t-ok{font-size:10px;color:var(--text3);}
+
+/* url setup card */
+.url-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px;}
+.url-label{font-size:11.5px;font-weight:500;color:var(--text2);margin-bottom:6px;}
+.url-row{display:flex;gap:6px;}
+.url-inp{flex:1;font-size:12px;padding:6px 9px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);outline:none;}
+.url-inp:focus{border-color:var(--green);}
+.url-btn{padding:6px 11px;font-size:12px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;white-space:nowrap;}
+.url-btn:hover{background:var(--green-dark);}
+
+/* chat panel */
+.chat-panel{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;height:calc(100vh - 100px);min-height:500px;}
+.chat-topbar{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.agent-info{display:flex;align-items:center;gap:8px;}
+.agent-dot{width:8px;height:8px;border-radius:50%;background:var(--green);}
+.agent-name{font-size:13px;font-weight:500;color:var(--text);}
+.agent-sub{font-size:11px;color:var(--text3);}
+.topbar-btns{display:flex;gap:5px;}
+.tbtn{padding:4px 10px;font-size:11.5px;border:1px solid var(--border2);border-radius:20px;cursor:pointer;background:transparent;color:var(--text2);display:flex;align-items:center;gap:3px;transition:all .12s;}
+.tbtn:hover{color:var(--text);border-color:var(--green);}
+.tbtn.on{background:var(--green-light);color:var(--green-dark);border-color:var(--green);}
+
+.messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;}
+.msg{display:flex;gap:8px;align-items:flex-start;}
+.msg.user-msg{flex-direction:row-reverse;}
+.av{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;}
+.av-bot{background:var(--green);color:#fff;}
+.av-usr{background:var(--bg2);color:var(--text);border:1px solid var(--border2);}
+.bubble{max-width:80%;padding:9px 13px;border-radius:11px;font-size:13px;line-height:1.65;color:var(--text);}
+.bubble-bot{background:var(--bg2);border:1px solid var(--border);border-bottom-left-radius:3px;}
+.bubble-usr{background:var(--green);color:#fff;border-bottom-right-radius:3px;}
+.bubble-alert{background:var(--green-light);border-color:#5DCAA5;}
+.bubble-warn{background:#FEF3E2;border-color:#F5D8A0;}
+.bubble-sheets{background:var(--blue-light);border-color:#85B7EB;}
+
+/* tool result */
+.tr{background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:8px 11px;margin-top:6px;font-size:12px;}
+.tr-head{display:flex;align-items:center;gap:5px;margin-bottom:5px;color:var(--text2);font-size:11.5px;font-weight:500;}
+.tk{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;padding:2px 7px;border-radius:8px;margin:1px 2px;}
+.tk-g{background:var(--green-light);color:var(--green-dark);}
+.tk-r{background:var(--red-light);color:#A32D2D;}
+.tk-a{background:var(--amber-light);color:#854F0B;}
+.tk-b{background:var(--blue-light);color:#185FA5;}
+.tk-p{background:var(--purple-light);color:#6B30A8;}
+
+/* sync badge */
+.sync-badge{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;padding:2px 8px;border-radius:10px;background:var(--blue-light);color:#185FA5;margin-top:4px;}
+.spin{animation:spin .8s linear infinite;display:inline-block;}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+/* typing */
+.typing{display:flex;align-items:center;gap:4px;padding:2px 0;}
+.td{width:5px;height:5px;border-radius:50%;background:var(--green);animation:blink 1.2s infinite;}
+.td:nth-child(2){animation-delay:.2s;}
+.td:nth-child(3){animation-delay:.4s;}
+@keyframes blink{0%,100%{opacity:.2}50%{opacity:1}}
+
+/* quick replies */
+.qr-wrap{display:flex;gap:5px;flex-wrap:wrap;padding:6px 14px 8px;flex-shrink:0;}
+.qr{padding:5px 11px;font-size:11.5px;border:1px solid var(--border2);border-radius:14px;cursor:pointer;background:transparent;color:var(--text2);transition:all .12s;}
+.qr:hover{border-color:var(--green);color:var(--green-dark);background:var(--green-light);}
+
+/* hint */
+.hint-bar{padding:5px 14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;overflow-x:auto;flex-shrink:0;}
+.hint{font-size:10.5px;color:var(--text3);white-space:nowrap;cursor:pointer;padding:2px 7px;border-radius:10px;transition:all .12s;}
+.hint:hover{background:var(--green-light);color:var(--green-dark);}
+.hint-sep{color:var(--border2);font-size:10px;}
+
+/* input */
+.inp-area{padding:10px 12px;border-top:1px solid var(--border);flex-shrink:0;}
+.inp-row{display:flex;gap:7px;align-items:flex-end;}
+.inp-row textarea{flex:1;font-size:13px;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);resize:none;min-height:40px;max-height:100px;font-family:var(--font);line-height:1.5;outline:none;transition:border-color .15s;}
+.inp-row textarea:focus{border-color:var(--green);}
+.send-btn{width:36px;height:36px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;}
+.send-btn:hover{background:var(--green-dark);}
+.send-btn:disabled{background:var(--bg2);color:var(--text3);cursor:not-allowed;}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:1000;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--bg);border-radius:var(--radius);padding:22px;width:90%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.15);}
+.modal-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.modal-sub{font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.5;}
+.modal-label{font-size:12px;font-weight:500;color:var(--text2);margin-bottom:5px;}
+.modal-inp{width:100%;font-size:12.5px;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);margin-bottom:10px;outline:none;font-family:var(--font);}
+.modal-inp:focus{border-color:var(--green);}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;}
+.modal-cancel{padding:7px 16px;font-size:13px;border:1px solid var(--border2);border-radius:var(--radius-sm);cursor:pointer;background:transparent;color:var(--text2);}
+.modal-ok{padding:7px 18px;font-size:13px;border:none;border-radius:var(--radius-sm);cursor:pointer;background:var(--green);color:#fff;font-weight:500;}
+.modal-ok:hover{background:var(--green-dark);}
+.info-box{padding:8px 11px;border-radius:var(--radius-sm);font-size:12px;line-height:1.6;display:flex;align-items:flex-start;gap:6px;margin-bottom:10px;}
+.info-box i{font-size:13px;flex-shrink:0;margin-top:1px;}
+.info-tip{background:var(--green-light);color:#085041;}
+.info-warn{background:var(--amber-light);color:#633806;}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <div class="logo"><i class="ti ti-checklist"></i></div>
+    <div>
+      <div class="app-name">동구밭 AI 과제 관리 에이전트</div>
+      <div class="app-sub">Google Sheets 연동</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="conn-pill" onclick="openModal()" title="Apps Script 연결 설정">
+      <div class="conn-dot" id="conn-dot"></div>
+      <span id="conn-label" style="font-size:11.5px;color:#5f5e5a;">시트 연결</span>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-card">
+      <div class="sb-head">현황</div>
+      <div class="stat-grid" id="stat-grid">
+        <div class="stat-item"><div class="stat-n" id="s-total">0</div><div class="stat-l">메인 과제</div></div>
+        <div class="stat-item"><div class="stat-n" id="s-urg" style="color:var(--red)">0</div><div class="stat-l">마감 위험</div></div>
+        <div class="stat-item"><div class="stat-n" id="s-sub" style="color:var(--green)">0</div><div class="stat-l">후속 업무</div></div>
+        <div class="stat-item"><div class="stat-n" id="s-appr" style="color:var(--purple)">0</div><div class="stat-l">승인 대기</div></div>
+      </div>
+    </div>
+    <div class="sb-card">
+      <div class="sb-head">진행 중 과제</div>
+      <div class="task-list-sb" id="sb-task-list">
+        <div style="padding:10px;text-align:center;font-size:12px;color:var(--text3);">시트 연결 후 자동 로드</div>
+      </div>
+    </div>
+    <div class="url-card">
+      <div class="url-label">Apps Script URL</div>
+      <div class="url-row">
+        <input class="url-inp" id="url-quick" placeholder="URL 붙여넣기..." />
+        <button class="url-btn" onclick="connectQuick()">연결</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="chat-panel">
+    <div class="chat-topbar">
+      <div class="agent-info">
+        <div class="agent-dot"></div>
+        <div>
+          <div class="agent-name">동구밭 AI 에이전트</div>
+          <div class="agent-sub" id="agent-sub">자율 분석 ON</div>
+        </div>
+      </div>
+      <div class="topbar-btns">
+        <button class="tbtn" onclick="syncSheet()"><i class="ti ti-refresh"></i> 동기화</button>
+        <button class="tbtn on" onclick="runRisk()"><i class="ti ti-radar"></i> 위험 분석</button>
+      </div>
+    </div>
+
+    <div class="messages" id="messages"></div>
+    <div class="qr-wrap" id="qr-wrap"></div>
+
+    <div class="hint-bar">
+      <span class="hint" onclick="qs('내일까지 예산안 검토해야 해, 긴급')">내일 예산안 긴급</span>
+      <span class="hint-sep">|</span>
+      <span class="hint" onclick="qs('이번 주 금요일 쿠팡 ROAS 분석')">금요일 ROAS 분석</span>
+      <span class="hint-sep">|</span>
+      <span class="hint" onclick="qs('위험한 과제 알려줘')">위험 과제</span>
+      <span class="hint-sep">|</span>
+      <span class="hint" onclick="qs('우선순위 다시 잡아줘')">우선순위</span>
+      <span class="hint-sep">|</span>
+      <span class="hint" onclick="qs('오늘 브리핑해줘')">오늘 브리핑</span>
+    </div>
+
+    <div class="inp-area">
+      <div class="inp-row">
+        <textarea id="inp" placeholder="자연어로 말하면 AI가 구글 시트에 바로 저장합니다..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send();}"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+        <button class="send-btn" id="send-btn" onclick="send()"><i class="ti ti-send"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Connection Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title">구글 시트 연결</div>
+    <div class="modal-sub">Apps Script 웹 앱 URL을 입력하면<br>자연어로 추가한 과제가 구글 시트에 자동 저장돼요.</div>
+    <div class="info-box info-tip"><i class="ti ti-info-circle"></i> 구글 시트 → 확장 프로그램 → Apps Script → 배포 → 웹 앱 URL 복사</div>
+    <div class="modal-label">Apps Script Web App URL</div>
+    <input class="modal-inp" id="modal-url" placeholder="https://script.google.com/macros/s/.../exec" />
+    <div class="info-box info-warn"><i class="ti ti-lock"></i> URL은 이 브라우저에만 저장돼요. 외부에 공유하지 마세요.</div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()">취소</button>
+      <button class="modal-ok" onclick="connectModal()">연결하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TODAY = new Date().toISOString().slice(0,10);
+let SCRIPT_URL = localStorage.getItem('dg_script_url') || '';
+let tasks = [];
+let history = [];
+let isConnected = false;
+
+// ── date / intent parsers ──
+function parseDate(t){
+  const n = new Date(TODAY);
+  if(/내일/.test(t)){const d=new Date(n);d.setDate(d.getDate()+1);return fmt(d);}
+  if(/모레/.test(t)){const d=new Date(n);d.setDate(d.getDate()+2);return fmt(d);}
+  if(/금요일/.test(t)){const d=new Date(n);const diff=(5-d.getDay()+7)%7||7;d.setDate(d.getDate()+diff);return fmt(d);}
+  if(/수요일/.test(t)){const d=new Date(n);const diff=(3-d.getDay()+7)%7||7;d.setDate(d.getDate()+diff);return fmt(d);}
+  if(/월요일/.test(t)){const d=new Date(n);const diff=(1-d.getDay()+7)%7||7;d.setDate(d.getDate()+diff);return fmt(d);}
+  if(/다음\s*주/.test(t)){const d=new Date(n);d.setDate(d.getDate()+7);return fmt(d);}
+  if(/월말/.test(t)){const d=new Date(n.getFullYear(),n.getMonth()+1,0);return fmt(d);}
+  const m=t.match(/(\d{1,2})[\/\-\.](\d{1,2})/);
+  if(m)return`${n.getFullYear()}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;
+  const d=new Date(n);d.setDate(d.getDate()+7);return fmt(d);
+}
+function fmt(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function parseImp(t){if(/중요|핵심|반드시/i.test(t))return'높음';if(/낮|여유|나중/i.test(t))return'낮음';return'보통';}
+function parseUrg(t){if(/긴급|급해|빨리|당장|즉시|오늘|내일/i.test(t))return'긴급';if(/여유|천천히/i.test(t))return'여유';return'보통';}
+function parseCat(t){
+  if(/마케팅|광고|ROAS|예산|캠페인/i.test(t))return'마케팅';
+  if(/신제품|패키지|디자인|샘플/i.test(t))return'신제품';
+  if(/매출|쿠팡|스마트스토어|채널|판매/i.test(t))return'매출';
+  if(/영업이익|이익|마진/i.test(t))return'영업이익';
+  if(/회의|미팅|보고/i.test(t))return'회의';
+  if(/채용|온보딩|팀|OKR|평가/i.test(t))return'팀 운영';
+  return'기타';
+}
+function dayDiff(due){return Math.round((new Date(due)-new Date(TODAY))/86400000);}
+function dStr(due){const d=dayDiff(due);if(d<0)return`D+${Math.abs(d)}지연`;if(d===0)return'오늘';return`D-${d}`;}
+function isBlocked(t){
+  if(!t.parentId||!t.chainType||t.chainType==='parallel')return false;
+  const p=tasks.find(x=>String(x.id)===String(t.parentId));
+  return p&&!p.done;
+}
+
+// ── connection ──
+function setConnState(state){
+  const dot=document.getElementById('conn-dot');
+  const lbl=document.getElementById('conn-label');
+  if(state==='on'){dot.className='conn-dot on';lbl.textContent='시트 연결됨';isConnected=true;}
+  else if(state==='err'){dot.className='conn-dot err';lbl.textContent='연결 오류';isConnected=false;}
+  else if(state==='loading'){dot.className='conn-dot loading';lbl.textContent='연결 중...';isConnected=false;}
+  else{dot.className='conn-dot';lbl.textContent='시트 연결';isConnected=false;}
+}
+
+async function connectURL(url){
+  if(!url){alert('URL을 입력해주세요.');return;}
+  SCRIPT_URL=url.trim();
+  localStorage.setItem('dg_script_url',SCRIPT_URL);
+  setConnState('loading');
+  try{
+    const res=await fetch(SCRIPT_URL+'?action=ping');
+    const data=await res.json();
+    if(data.ok){
+      setConnState('on');
+      document.getElementById('agent-sub').textContent='자율 분석 ON · Sheets 연결됨';
+      addBotMsg(`<span class="tk tk-g"><i class="ti ti-check"></i> 구글 시트 연결 성공!</span><br>이제 과제를 추가하면 스프레드시트에 자동 저장돼요.`,'bubble-alert');
+      await syncSheet();
+    }else{setConnState('err');addBotMsg('연결 실패. URL을 다시 확인해주세요.');}
+  }catch(e){setConnState('err');addBotMsg('연결 오류: '+e.message);}
+}
+
+function connectQuick(){connectURL(document.getElementById('url-quick').value);}
+function connectModal(){connectURL(document.getElementById('modal-url').value);closeModal();}
+function openModal(){document.getElementById('modal').classList.add('open');document.getElementById('modal-url').value=SCRIPT_URL;}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+
+// ── sheet API ──
+async function syncSheet(){
+  if(!isConnected){addBotMsg('먼저 상단 <strong>시트 연결</strong> 버튼에서 Apps Script URL을 연결해주세요.');return;}
+  addBotMsg('<span class="sync-badge"><span class="spin"><i class="ti ti-loader"></i></span> 구글 시트에서 과제 불러오는 중...</span>','bubble-sheets');
+  try{
+    const res=await fetch(SCRIPT_URL+'?action=getTasks');
+    const data=await res.json();
+    if(data.ok){
+      tasks=data.tasks.filter(t=>t.status!=='완료').map(t=>({
+        id:t.id,name:t.name,cat:t.cat,owner:t.owner,person:t.person,
+        imp:t.imp,urg:t.urg,due:t.due,done:false,doneAt:null,
+        parentId:t.parentId||null,chainType:t.chainType||null
+      }));
+      renderSB();
+      addBotMsg(`<span class="tk tk-b"><i class="ti ti-table"></i> 동기화 완료</span> 구글 시트에서 <b>${tasks.length}개</b> 과제를 불러왔어요.`,'bubble-sheets');
+      setQR(['마감 위험 과제 알려줘','우선순위 다시 잡아줘','오늘 브리핑해줘']);
+    }
+  }catch(e){addBotMsg('동기화 오류: '+e.message);}
+}
+
+async function apiAdd(taskData){
+  if(!isConnected)return{ok:false,error:'미연결'};
+  const res=await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'addTask',...taskData})});
+  return res.json();
+}
+async function apiComplete(id,name){
+  if(!isConnected)return{ok:false,error:'미연결'};
+  const res=await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'completeTask',id,name})});
+  return res.json();
+}
+
+// ── sidebar ──
+function renderSB(){
+  const act=tasks.filter(t=>!t.done);
+  const urg=act.filter(t=>dayDiff(t.due)<=2).length;
+  const appr=act.filter(t=>t.chainType==='approval'&&isBlocked(t)).length;
+  document.getElementById('s-total').textContent=act.filter(t=>!t.parentId).length;
+  document.getElementById('s-urg').textContent=urg;
+  document.getElementById('s-sub').textContent=act.filter(t=>t.parentId).length;
+  document.getElementById('s-appr').textContent=appr;
+  const roots=act.filter(t=>!t.parentId).sort((a,b)=>{
+    const s={'높음':0,'보통':1,'낮음':2,'긴급':0,'여유':2};
+    return(s[a.imp]||1)-(s[b.imp]||1)||dayDiff(a.due)-dayDiff(b.due);
+  });
+  if(!roots.length){
+    document.getElementById('sb-task-list').innerHTML='<div style="padding:10px;text-align:center;font-size:12px;color:var(--text3);">과제 없음</div>';
+    return;
+  }
+  document.getElementById('sb-task-list').innerHTML=roots.map(t=>{
+    const d=dayDiff(t.due);
+    return`<div class="sb-task" onclick="qs('"${t.name}" 과제 현황 알려줘')">
+      <div class="sb-task-name">${t.name}</div>
+      <div class="sb-task-row">
+        <span class="tag ${t.owner==='내 과제'?'t-mine':'t-del'}">${t.owner==='내 과제'?'내':'위임'}</span>
+        ${d<0?`<span class="tag t-urg">${dStr(t.due)}</span>`:d<=2?`<span class="tag t-urg">D-${d}</span>`:d<=5?`<span class="tag t-warn">D-${d}</span>`:`<span class="t-ok">D-${d}</span>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── messages ──
+function addBotMsg(html,cls=''){
+  const el=document.createElement('div');el.className='msg';
+  el.innerHTML=`<div class="av av-bot"><i class="ti ti-robot"></i></div><div class="bubble bubble-bot${cls?' '+cls:''}">${html}</div>`;
+  document.getElementById('messages').appendChild(el);scroll();
+}
+function addUserMsg(txt){
+  const el=document.createElement('div');el.className='msg user-msg';
+  el.innerHTML=`<div class="av av-usr">진</div><div class="bubble bubble-usr">${txt}</div>`;
+  document.getElementById('messages').appendChild(el);scroll();
+}
+function addThinking(){
+  const el=document.createElement('div');el.id='thinking';el.className='msg';
+  el.innerHTML=`<div class="av av-bot"><i class="ti ti-robot"></i></div><div class="bubble bubble-bot"><div class="typing"><div class="td"></div><div class="td"></div><div class="td"></div></div></div>`;
+  document.getElementById('messages').appendChild(el);scroll();
+}
+function removeThinking(){const e=document.getElementById('thinking');if(e)e.remove();}
+function scroll(){const m=document.getElementById('messages');m.scrollTop=m.scrollHeight;}
+function setQR(arr){document.getElementById('qr-wrap').innerHTML=arr.map(r=>`<button class="qr" onclick="qs('${r.replace(/'/g,"\\'")}')"> ${r}</button>`).join('');}
+function tCard(icon,label,body){return`<div class="tr"><div class="tr-head"><i class="ti ti-${icon}"></i> ${label}</div>${body}</div>`;}
+
+// ── risk ──
+function runRisk(){
+  const act=tasks.filter(t=>!t.done);
+  const ov=act.filter(t=>dayDiff(t.due)<0);
+  const urg=act.filter(t=>dayDiff(t.due)>=0&&dayDiff(t.due)<=2);
+  const appr=act.filter(t=>t.chainType==='approval'&&isBlocked(t));
+  const parts=[];
+  if(ov.length)parts.push(`<span class="tk tk-r">마감 초과 ${ov.length}건</span> ${ov.map(t=>`<b>${t.name}</b>(${dStr(t.due)})`).join(', ')}`);
+  if(urg.length)parts.push(`<span class="tk tk-r">D-2 이내 ${urg.length}건</span> ${urg.map(t=>`<b>${t.name}</b>(${dStr(t.due)})`).join(', ')}`);
+  if(appr.length)parts.push(`<span class="tk tk-p">승인 대기 ${appr.length}건</span> ${appr.map(t=>`<b>${t.name}</b>`).join(', ')}`);
+  const body=parts.length?parts.join('<br>'):'<span class="tk tk-g">위험 없음</span> 모든 과제 정상';
+  addBotMsg(tCard('alert-triangle','자율 위험 분석',body),parts.length?'bubble-warn':'bubble-alert');
+  if(parts.length)setQR(['위험 과제 처리 순서 알려줘','우선순위 재배치해줘','전체 브리핑해줘']);
+}
+
+// ── tools ──
+async function execTool(name,args){
+  if(name==='ADD_TASK'){
+    const raw=args.raw||args.name||'';
+    const td={name:args.name||raw.slice(0,40),cat:args.cat||parseCat(raw),owner:args.owner||'내 과제',
+      person:args.person||'진이',imp:args.imp||parseImp(raw),urg:args.urg||parseUrg(raw),
+      due:args.due||parseDate(raw),status:'대기',memo:args.memo||'',parentId:args.parentId||'',chainType:args.chainType||''};
+    const local={id:'l-'+Date.now(),...td,done:false,doneAt:null};
+    tasks.push(local);renderSB();
+    let sync='';
+    if(isConnected){
+      try{const r=await apiAdd(td);
+        sync=r.ok
+          ?`<br><span class="sync-badge"><i class="ti ti-table"></i> 구글 시트 저장 완료 (ID: ${r.id})</span>`
+          :`<br><span class="tk tk-r">시트 저장 실패: ${r.error}</span>`;
+        if(r.ok)local.id=r.id;
+      }catch(e){sync=`<br><span class="tk tk-r">네트워크 오류</span>`;}
+    }else{sync=`<br><span class="tk tk-a">⚠ 시트 미연결 — 앱 내에만 저장됨</span>`;}
+    return tCard('circle-check','과제 등록',
+      `<span class="tk tk-g"><i class="ti ti-check"></i> 등록됨</span> <b>${td.name}</b><br>📁 ${td.cat} | 마감 <b>${td.due}</b>(${dStr(td.due)}) | ${td.urg==='긴급'?'🔴 긴급':td.urg==='여유'?'🟢 여유':'🟡 보통'}${sync}`);
+  }
+  if(name==='COMPLETE_TASK'){
+    const t=tasks.find(x=>String(x.id)===String(args.id)||x.name.includes(args.name||''));
+    if(!t)return`<span class="tk tk-r">과제를 찾을 수 없습니다</span>`;
+    t.done=true;t.doneAt=TODAY;renderSB();
+    let sync='';
+    if(isConnected){
+      try{const r=await apiComplete(args.id,args.name);
+        sync=r.ok?`<br><span class="sync-badge"><i class="ti ti-table"></i> 구글 시트 업데이트 완료</span>`:`<br><span class="tk tk-r">시트 업데이트 실패</span>`;
+        if(r.unblocked&&r.unblocked.length)sync+=`<br><span class="tk tk-b"><i class="ti ti-lock-open"></i> 활성화됨</span> ${r.unblocked.map(n=>`<b>${n}</b>`).join(', ')}`;
+      }catch(e){sync=`<br><span class="tk tk-r">네트워크 오류</span>`;}
+    }
+    return tCard('check','완료 처리',`<span class="tk tk-g"><i class="ti ti-check"></i> 완료</span> <b>${t.name}</b>${sync}`);
+  }
+  if(name==='ANALYZE_RISK'){runRisk();return null;}
+  if(name==='PRIORITIZE'){
+    const act=tasks.filter(t=>!t.done&&!t.parentId);
+    act.sort((a,b)=>{const s={'높음':0,'보통':1,'낮음':2,'긴급':0,'여유':2};return(s[a.imp]||1)-(s[b.imp]||1)||(s[a.urg]||1)-(s[b.urg]||1)||dayDiff(a.due)-dayDiff(b.due);});
+    return tCard('arrows-sort','우선순위 추천',act.slice(0,5).map((t,i)=>`<span class="tk ${i===0?'tk-r':i<3?'tk-a':'tk-g'}">${i+1}위</span> <b>${t.name}</b> (${dStr(t.due)})`).join('<br>'));
+  }
+  if(name==='SYNC_SHEET'){await syncSheet();return null;}
+  return null;
+}
+
+// ── send ──
+function qs(t){document.getElementById('inp').value=t;send();}
+
+async function send(){
+  const inp=document.getElementById('inp');
+  const text=inp.value.trim();if(!text)return;
+  inp.value='';inp.style.height='auto';
+  document.getElementById('send-btn').disabled=true;
+  document.getElementById('qr-wrap').innerHTML='';
+  addUserMsg(text);addThinking();
+  const ctx=tasks.filter(t=>!t.done).map(t=>`id:${t.id} [${t.cat}] "${t.name}" | ${t.owner} | 중요:${t.imp} 시급:${t.urg} | 마감:${t.due}(${dStr(t.due)})${isBlocked(t)?' | ⏸차단':''}`).join('\n');
+  const sys=`당신은 동구밭 AI 과제 관리 에이전트. 오늘: ${TODAY}. DB: 구글 스프레드시트(${isConnected?'연결됨':'미연결'}).
+
+도구 형식 (JSON):
+{"tool":"TOOL_NAME","args":{...}}
+
+도구:
+- ADD_TASK: {name,cat,owner,person,imp,urg,due,memo?,raw} — 즉시 등록, 구글 시트 자동 저장
+- COMPLETE_TASK: {id} 또는 {name}
+- ANALYZE_RISK: {}
+- PRIORITIZE: {}
+- SYNC_SHEET: {}
+
+날짜: 내일→${parseDate('내일')}, 금요일→${parseDate('금요일')}, 다음주→${parseDate('다음 주')}
+카테고리: 회의/신제품/마케팅/영업이익/매출/팀 운영/기타
+owner: 내 과제/위임 과제 | 중요도·시급도: 높음/보통/낮음, 긴급/보통/여유
+
+과제 추가 요청 → ADD_TASK 즉시 실행. 완료 요청 → COMPLETE_TASK. 한국어 2-3문장.
+
+현재 과제:
+${ctx||'(없음)'}`;
+
+  history.push({role:'user',content:text});
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys,messages:history})});
+    const data=await res.json();
+    const raw=data.content?.[0]?.text||'응답 없음';
+    history.push({role:'assistant',content:raw});
+    removeThinking();
+    await processRes(raw,text);
+  }catch(e){removeThinking();addBotMsg('오류: '+e.message);}
+  document.getElementById('send-btn').disabled=false;
+}
+
+async function processRes(raw,userText){
+  const re=/\{"tool"\s*:\s*"([^"]+)"\s*,\s*"args"\s*:\s*(\{[\s\S]*?\})\}/g;
+  let m,toolHtml='';
+  while((m=re.exec(raw))!==null){
+    let args={};try{args=JSON.parse(m[2]);}catch(e){}
+    const r=await execTool(m[1],args);
+    if(r)toolHtml+=r;
+  }
+  let display=raw.replace(/\{"tool"[\s\S]*?\}/g,'').replace(/\n{3,}/g,'\n\n').trim();
+  let cls='';
+  if(/위험|마감|초과/i.test(raw))cls='bubble-warn';
+  else if(/등록|완료|추가/i.test(raw))cls='bubble-alert';
+  if(display||toolHtml)addBotMsg((display?`<span>${display.replace(/\n/g,'<br>')}</span>`:'')+toolHtml,cls);
+  const lo=raw.toLowerCase()+userText.toLowerCase();
+  if(/add_task|등록|추가/.test(lo))setQR(['후속 업무 추가해줘','우선순위 다시 잡아줘','이번 주 마감 뭐야?']);
+  else if(/complete|완료/.test(lo))setQR(['다음에 뭘 해야 해?','전체 브리핑해줘','시트 동기화해줘']);
+  else if(/risk|위험|분석/.test(lo))setQR(['위험 과제 처리 순서 알려줘','우선순위 재배치해줘']);
+  else setQR(['위험한 과제 알려줘','우선순위 다시 잡아줘','시트에서 최신 데이터 가져와줘']);
+}
+
+// ── init ──
+(function(){
+  renderSB();
+  addBotMsg(`안녕하세요! 동구밭 AI 에이전트입니다 🌱<br>자연어로 말하면 구글 시트에 바로 저장돼요.
+  ${tCard('plug','연결 방법',`<span class="tk tk-b">1</span> 상단 <strong>시트 연결</strong> 버튼 클릭<br><span class="tk tk-b">2</span> Apps Script URL 붙여넣기<br><span class="tk tk-b">3</span> 연결 → 자동 동기화`)}
+  ${tCard('terminal','이렇게 말해보세요',`<span class="tk tk-g">추가</span> "내일까지 예산안 검토해야 해, 긴급"<br><span class="tk tk-g">추가</span> "이번 주 금요일 쿠팡 ROAS 분석"<br><span class="tk tk-r">분석</span> "위험한 과제 알려줘"<br><span class="tk tk-a">정렬</span> "우선순위 다시 잡아줘"`)}
+  `,'bubble-alert');
+  setQR(['위험한 과제 알려줘','우선순위 다시 잡아줘','오늘 브리핑해줘']);
+  if(SCRIPT_URL){document.getElementById('url-quick').value=SCRIPT_URL;connectURL(SCRIPT_URL);}
+  setTimeout(()=>runRisk(),1500);
+})();
+</script>
+</body>
+</html>
