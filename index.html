@@ -58,6 +58,8 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 .fr{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap;}
 .fb{padding:5px 13px;font-size:12px;border:1px solid var(--bd2);border-radius:20px;cursor:pointer;background:transparent;color:var(--t2);transition:all .15s;}
 .fb.active{background:var(--g);border-color:var(--g);color:#fff;}
+.fb.team-active{background:var(--b);border-color:var(--b);color:#fff;}
+.fr-label{font-size:11px;color:var(--t3);display:flex;align-items:center;gap:4px;padding:2px 4px;white-space:nowrap;}
 
 /* TASK CARDS */
 .tlist{display:flex;flex-direction:column;gap:7px;}
@@ -315,6 +317,7 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
     </div>
     <div class="sg" id="sg"></div>
     <div class="fr" id="fr"></div>
+    <div class="fr" id="team-fr" style="margin-top:-6px;margin-bottom:1rem;"></div>
     <div class="tlist" id="tlist"></div>
   </div>
 
@@ -526,6 +529,7 @@ var ownerMode = 'mine';
 var cmoMode = 'mine';
 var modalPid = null;
 var filterCat = '전체';
+var filterTeam = '전체';
 var archYear = 2026, archMonth = 5;
 var aiHist = [];
 var actionItems = [];
@@ -612,12 +616,15 @@ function syncSheet() {
     .then(function(r) { return r.json(); })
     .then(function(d) {
       if (d.ok) {
-        tasks = d.tasks.filter(function(t) { return t.status !== '완료'; }).map(function(t) {
+        // 완료 과제도 포함 (아카이브에서 표시하기 위해)
+        tasks = d.tasks.map(function(t) {
+          var isDone = t.status === '완료';
           return { id: t.id, name: t.name, cat: t.cat,
             owner: t.owner === '내 과제' ? 'mine' : 'del', person: t.person,
+            team: t.team || '',
             imp: t.imp === '높음' ? 'high' : t.imp === '낮음' ? 'low' : 'mid',
             urg: t.urg === '긴급' ? 'high' : t.urg === '여유' ? 'low' : 'mid',
-            due: t.due, done: false, doneAt: null,
+            due: t.due, done: isDone, doneAt: isDone ? (t.완료일 || t.doneAt || TODAY) : null,
             parentId: t.parentId || null, chainType: t.chainType || null, expanded: false };
         });
         nextId = tasks.length ? Math.max.apply(null, tasks.map(function(t) { return parseInt(t.id) || 0; })) + 1 : 1;
@@ -650,16 +657,49 @@ function renderStats() {
 }
 function renderFilters() {
   var cats = ['전체', '회의', '신제품', '마케팅', '영업이익', '매출', '팀 운영', '기타'];
-  document.getElementById('fr').innerHTML = cats.map(function(c) {
-    return '<button class="fb' + (c === filterCat ? ' active' : '') + '" onclick="setFilter(\'' + c + '\')">' + c + '</button>';
-  }).join('');
+  document.getElementById('fr').innerHTML =
+    '<span class="fr-label"><i class="ti ti-tag"></i> 카테고리</span>' +
+    cats.map(function(c) {
+      return '<button class="fb' + (c === filterCat ? ' active' : '') + '" onclick="setFilter(\'' + c + '\')">' + c + '</button>';
+    }).join('');
+  renderTeamFilter();
+}
+function renderTeamFilter() {
+  // 현재 과제에서 팀명 자동 추출
+  var teams = ['전체'];
+  tasks.filter(function(t) { return !t.done; }).forEach(function(t) {
+    var team = t.team || '';
+    if (!team && t.person && t.person.indexOf(' / ') > -1) {
+      team = t.person.split(' / ')[1].trim();
+    }
+    if (team && teams.indexOf(team) === -1) teams.push(team);
+  });
+  // 팀 필터가 2개 이상일 때만 표시 (전체 + 팀 1개 이상)
+  var wrap = document.getElementById('team-fr');
+  if (teams.length <= 1) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML =
+    '<span class="fr-label"><i class="ti ti-users"></i> 팀</span>' +
+    teams.map(function(tm) {
+      return '<button class="fb' + (tm === filterTeam ? ' team-active' : '') + '" onclick="setTeamFilter(\'' + tm.replace(/'/g, "\\'") + '\')">' + tm + '</button>';
+    }).join('');
 }
 function setFilter(c) { filterCat = c; renderFilters(); renderTasks(); }
+function setTeamFilter(tm) { filterTeam = tm; renderTeamFilter(); renderTasks(); }
+function getTaskTeam(t) {
+  if (t.team) return t.team;
+  if (t.person && t.person.indexOf(' / ') > -1) return t.person.split(' / ')[1].trim();
+  return '';
+}
 function renderTasks() {
-  var roots = tasks.filter(function(t) { return !t.done && !t.parentId && (filterCat === '전체' || t.cat === filterCat); });
+  var roots = tasks.filter(function(t) {
+    if (t.done || t.parentId) return false;
+    if (filterCat !== '전체' && t.cat !== filterCat) return false;
+    if (filterTeam !== '전체' && getTaskTeam(t) !== filterTeam) return false;
+    return true;
+  });
   roots.sort(function(a, b) { var s = { high: 0, mid: 1, low: 2 }; return (s[a.imp] + s[a.urg]) - (s[b.imp] + s[b.urg]) || dd(a.due) - dd(b.due); });
   var lc = document.getElementById('tlist');
-  if (!roots.length) { lc.innerHTML = '<div class="empty-s">해당 카테고리의 과제가 없습니다</div>'; return; }
+  if (!roots.length) { lc.innerHTML = '<div class="empty-s">해당 조건의 과제가 없습니다</div>'; return; }
   lc.innerHTML = roots.map(function(t) { return renderCard(t, false); }).join('');
 }
 function renderCard(t, isChild) {
@@ -879,7 +919,10 @@ function renderArchive() {
   var y = archYear, m = archMonth;
   var pref = y + '-' + String(m).padStart(2, '0');
   document.getElementById('arch-title').textContent = y + '년 ' + m + '월';
-  var mt = tasks.filter(function(t) { return t.due.startsWith(pref); });
+  // 마감일 또는 완료일이 해당 월인 과제 모두 포함
+  var mt = tasks.filter(function(t) {
+    return t.due.startsWith(pref) || (t.doneAt && t.doneAt.startsWith(pref));
+  });
   var done = mt.filter(function(t) { return t.done; }), active = mt.filter(function(t) { return !t.done; });
   var rate = mt.length ? Math.round(done.length / mt.length * 100) : 0;
   if (!mt.length) { document.getElementById('arch-body').innerHTML = '<div class="empty-s">이 달에 등록된 과제가 없습니다</div>'; return; }
@@ -892,13 +935,19 @@ function renderArchive() {
   }).join('');
   var circ = 2 * Math.PI * 26, dash = circ * rate / 100;
   var dH = done.length ? done.map(function(t) {
-    return '<div class="tc done-c"><div class="tt"><div class="tn">' + t.name + '</div><div class="bgs"><span class="b b-cat">' + t.cat + '</span><span class="b" style="background:#f1efe8;color:var(--t3);">완료</span></div></div>' +
+    return '<div class="tc done-c"><div class="tt"><div class="tn">' + t.name + '</div>' +
+      '<div class="bgs"><span class="b b-cat">' + t.cat + '</span>' +
+      '<span class="b" style="background:#f1efe8;color:var(--t3);">✅ 완료</span>' +
+      '<span class="b ' + (t.owner === 'mine' ? 'b-mine' : 'b-del') + '">' + (t.owner === 'mine' ? '내 과제' : '위임·' + t.person) + '</span>' +
+      '</div></div>' +
       '<div class="tm"><span class="mi"><i class="ti ti-calendar-check"></i>마감 ' + t.due + ' · 완료 ' + (t.doneAt || '-') + '</span></div></div>';
   }).join('') : '<div style="font-size:12px;color:var(--t3);padding:8px 0;">완료 과제 없음</div>';
   var aH = active.length ? active.map(function(t) {
     var d2 = dd(t.due), dc = d2 < 0 ? 'oc' : d2 <= 3 ? 'dc' : '';
     return '<div class="tc ' + (t.owner === 'mine' ? 'mine' : 'delegated') + '"><div class="tt"><div class="tn">' + t.name + '</div>' +
-      '<div class="bgs"><span class="b b-cat">' + t.cat + '</span><span class="b b-ph">미완료</span></div></div>' +
+      '<div class="bgs"><span class="b b-cat">' + t.cat + '</span><span class="b b-ph">미완료</span>' +
+      '<span class="b ' + (t.owner === 'mine' ? 'b-mine' : 'b-del') + '">' + (t.owner === 'mine' ? '내 과제' : '위임·' + t.person) + '</span>' +
+      '</div></div>' +
       '<div class="tm"><span class="mi ' + dc + '"><i class="ti ti-calendar"></i>' + t.due + ' (' + dStr(t.due) + ')</span></div></div>';
   }).join('') : '<div style="font-size:12px;color:var(--t3);padding:8px 0;">미완료 과제 없음</div>';
   document.getElementById('arch-body').innerHTML =
