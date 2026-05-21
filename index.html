@@ -231,6 +231,25 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 .done-c .tn{text-decoration:line-through;color:var(--t3);}
 .empty-s{text-align:center;padding:2rem;color:var(--t3);font-size:13px;}
 
+/* FLOATING ADD BTN */
+.fab{position:fixed;bottom:24px;right:24px;width:48px;height:48px;background:var(--g);color:#fff;border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 16px rgba(29,158,117,.4);z-index:90;transition:all .2s;}
+.fab:hover{background:var(--gd);transform:scale(1.08);}
+.fab-label{position:fixed;bottom:30px;right:80px;background:var(--t);color:#fff;font-size:12px;padding:5px 11px;border-radius:20px;white-space:nowrap;z-index:90;opacity:0;pointer-events:none;transition:opacity .2s;}
+.fab:hover + .fab-label, .fab-wrap:hover .fab-label{opacity:1;}
+.fab-wrap{position:fixed;bottom:24px;right:24px;display:flex;align-items:center;gap:10px;z-index:90;}
+/* SEC HEADER */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.sec-hdr .sec-title{margin-bottom:0;}
+.sec-add-btn{padding:5px 13px;font-size:12px;background:var(--g);color:#fff;border:none;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:5px;font-weight:500;}
+.sec-add-btn:hover{background:var(--gd);}
+/* ADD TASK MODAL */
+.atmod{background:var(--bg);border-radius:var(--rr);width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+.atmod-head{padding:14px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg);z-index:1;}
+.atmod-title{font-size:14px;font-weight:600;color:var(--t);}
+.atmod-close{width:26px;height:26px;border:none;background:var(--bg2);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--t2);}
+.atmod-body{padding:16px 18px;display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.atmod-full{grid-column:1/-1;}
+.atmod-foot{padding:12px 18px;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--bg);}
 /* MODALS */
 .mover{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:200;padding:16px;}
 .mover.open{display:flex;}
@@ -290,6 +309,10 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 
   <!-- DASHBOARD -->
   <div class="sec active" id="sec-dash">
+    <div class="sec-hdr">
+      <div></div>
+      <button class="sec-add-btn" onclick="openAddModal()"><i class="ti ti-plus"></i> 새 과제 추가</button>
+    </div>
     <div class="sg" id="sg"></div>
     <div class="fr" id="fr"></div>
     <div class="tlist" id="tlist"></div>
@@ -297,7 +320,10 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 
   <!-- FLOW -->
   <div class="sec" id="sec-flow">
-    <div class="sec-title"><i class="ti ti-git-branch"></i> 후속 업무 흐름도</div>
+    <div class="sec-hdr">
+      <div class="sec-title"><i class="ti ti-git-branch"></i> 후속 업무 흐름도</div>
+      <button class="sec-add-btn" onclick="openAddModal()"><i class="ti ti-plus"></i> 새 과제 추가</button>
+    </div>
     <div class="flow-tree" id="flow-tree"></div>
   </div>
 
@@ -320,7 +346,10 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 
   <!-- MATRIX -->
   <div class="sec" id="sec-matrix">
-    <div class="sec-title"><i class="ti ti-target"></i> 아이젠하워 매트릭스 — 중요도 × 시급도</div>
+    <div class="sec-hdr">
+      <div class="sec-title"><i class="ti ti-target"></i> 아이젠하워 매트릭스 — 중요도 × 시급도</div>
+      <button class="sec-add-btn" onclick="openAddModal()"><i class="ti ti-plus"></i> 새 과제 추가</button>
+    </div>
     <div style="display:grid;grid-template-columns:18px 1fr;gap:4px;align-items:center;">
       <div style="writing-mode:vertical-rl;font-size:10px;color:var(--t3);text-align:center;">중요도 ↑</div>
       <div>
@@ -400,10 +429,50 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
       <button onclick="changeMonth(-1)"><i class="ti ti-chevron-left"></i></button>
       <div class="mn-title" id="arch-title"></div>
       <button onclick="changeMonth(1)"><i class="ti ti-chevron-right"></i></button>
+      <button class="sec-add-btn" onclick="openAddModal()"><i class="ti ti-plus"></i> 새 과제 추가</button>
     </div>
     <div id="arch-body"></div>
   </div>
 
+</div>
+
+<!-- 플로팅 새 과제 버튼 -->
+<div class="fab-wrap">
+  <div class="fab-label">새 과제 추가</div>
+  <button class="fab" onclick="openAddModal()"><i class="ti ti-plus"></i></button>
+</div>
+
+<!-- 새 과제 추가 모달 -->
+<div class="mover" id="add-modal">
+  <div class="atmod">
+    <div class="atmod-head">
+      <div class="atmod-title"><i class="ti ti-clipboard-plus" style="margin-right:5px;color:var(--g);"></i>새 과제 추가</div>
+      <button class="atmod-close" onclick="closeAddModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="atmod-body">
+      <div class="fg atmod-full"><label>과제명 *</label><input type="text" id="am-name" placeholder="과제 내용을 입력하세요"/></div>
+      <div class="fg"><label>카테고리</label>
+        <select id="am-cat"><option>회의</option><option>신제품</option><option>마케팅</option><option>영업이익</option><option>매출</option><option>팀 운영</option><option>기타</option></select>
+      </div>
+      <div class="fg"><label>담당 구분</label>
+        <div class="owner-tog"><button class="ot-btn on" id="am-m" onclick="setAMOwner('mine')"><i class="ti ti-user"></i> 내 과제</button><button class="ot-btn" id="am-d" onclick="setAMOwner('del')"><i class="ti ti-users"></i> 위임</button></div>
+      </div>
+      <div class="fg"><label>중요도</label><select id="am-imp"><option value="high">🔴 높음</option><option value="mid" selected>🟡 보통</option><option value="low">🟢 낮음</option></select></div>
+      <div class="fg"><label>시급도</label><select id="am-urg"><option value="high">🔴 긴급</option><option value="mid" selected>🟡 보통</option><option value="low">🟢 여유</option></select></div>
+      <div class="fg"><label>마감일</label><input type="date" id="am-due"/></div>
+      <div class="fg"><label>담당자명</label><input type="text" id="am-person" placeholder="담당자 이름"/></div>
+      <div class="fg atmod-full"><label>상위 과제 (선택)</label><select id="am-parent"><option value="">— 독립 과제 —</option></select></div>
+      <div class="fg atmod-full" id="am-chain-wrap" style="display:none;"><label>후속 연결 방식</label>
+        <select id="am-chain"><option value="sequential">🔗 순서 체인</option><option value="parallel">⚡ 병렬 진행</option><option value="approval">🔐 승인 게이트</option></select>
+      </div>
+      <div class="fg atmod-full"><label>관련 문서 링크</label><input type="text" id="am-link" placeholder="https://..."/></div>
+      <div class="fg atmod-full"><label>메모</label><textarea id="am-memo" placeholder="추가 내용 (선택사항)" style="width:100%;font-size:13px;padding:7px 10px;border:1px solid var(--bd2);border-radius:var(--rs);outline:none;font-family:var(--fn);resize:vertical;min-height:52px;"></textarea></div>
+    </div>
+    <div class="atmod-foot">
+      <button class="btn-cancel" onclick="closeAddModal()">취소</button>
+      <button class="btn-ok" onclick="submitAddModal()"><i class="ti ti-check"></i> 등록하기</button>
+    </div>
+  </div>
 </div>
 
 <!-- 시트 연결 모달 -->
@@ -1007,6 +1076,77 @@ function showTab(t) {
 }
 
 function renderAll() { renderStats(); renderFilters(); renderTasks(); renderMatrix(); renderFlow(); popSelects(); }
+
+// ── add modal ──
+var amOwnerMode = 'mine';
+function openAddModal() {
+  document.getElementById('am-name').value = '';
+  document.getElementById('am-person').value = '';
+  document.getElementById('am-link').value = '';
+  document.getElementById('am-memo').value = '';
+  document.getElementById('am-due').value = TODAY;
+  document.getElementById('am-imp').value = 'mid';
+  document.getElementById('am-urg').value = 'mid';
+  document.getElementById('am-parent').value = '';
+  document.getElementById('am-chain-wrap').style.display = 'none';
+  setAMOwner('mine');
+  popSelectsAM();
+  document.getElementById('add-modal').classList.add('open');
+  setTimeout(function() { document.getElementById('am-name').focus(); }, 100);
+}
+function closeAddModal() { document.getElementById('add-modal').classList.remove('open'); }
+function setAMOwner(m) {
+  amOwnerMode = m;
+  document.getElementById('am-m').className = 'ot-btn' + (m === 'mine' ? ' on' : '');
+  document.getElementById('am-d').className = 'ot-btn' + (m === 'del' ? ' on' : '');
+}
+function popSelectsAM() {
+  var sel = document.getElementById('am-parent');
+  var val = sel.value;
+  sel.innerHTML = '<option value="">— 독립 과제 —</option>';
+  tasks.filter(function(t) { return !t.done && !t.parentId; }).forEach(function(t) {
+    var o = document.createElement('option');
+    o.value = t.id; o.textContent = t.name.length > 28 ? t.name.slice(0,28) + '…' : t.name;
+    sel.appendChild(o);
+  });
+  sel.value = val;
+}
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('am-parent').addEventListener('change', function() {
+    document.getElementById('am-chain-wrap').style.display = this.value ? 'flex' : 'none';
+  });
+});
+function submitAddModal() {
+  var name = document.getElementById('am-name').value.trim();
+  if (!name) { alert('과제명을 입력해주세요.'); return; }
+  var pid = document.getElementById('am-parent').value ? parseInt(document.getElementById('am-parent').value) : null;
+  var t = {
+    id: nextId++, name: name,
+    cat: document.getElementById('am-cat').value,
+    owner: amOwnerMode,
+    person: document.getElementById('am-person').value || '진이',
+    imp: document.getElementById('am-imp').value,
+    urg: document.getElementById('am-urg').value,
+    due: document.getElementById('am-due').value || TODAY,
+    link: document.getElementById('am-link').value,
+    memo: document.getElementById('am-memo').value,
+    done: false, doneAt: null,
+    parentId: pid,
+    chainType: pid ? document.getElementById('am-chain').value : null,
+    expanded: false
+  };
+  tasks.push(t);
+  if (pid) { var p = tasks.find(function(x) { return x.id === pid; }); if (p) p.expanded = true; }
+  if (connected) {
+    apiAdd({ name: t.name, cat: t.cat, owner: t.owner === 'mine' ? '내 과제' : '위임 과제',
+      person: t.person, imp: t.imp === 'high' ? '높음' : t.imp === 'low' ? '낮음' : '보통',
+      urg: t.urg === 'high' ? '긴급' : t.urg === 'low' ? '여유' : '보통',
+      due: t.due, status: '대기', memo: t.memo || '', parentId: t.parentId || '', chainType: t.chainType || '' })
+      .catch(function() {});
+  }
+  closeAddModal();
+  renderAll();
+}
 
 // ── init ──
 (function() {
