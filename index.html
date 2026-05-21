@@ -378,7 +378,8 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
         <div class="fg"><label>중요도</label><select id="f-imp"><option value="high">🔴 높음</option><option value="mid" selected>🟡 보통</option><option value="low">🟢 낮음</option></select></div>
         <div class="fg"><label>시급도</label><select id="f-urg"><option value="high">🔴 긴급</option><option value="mid" selected>🟡 보통</option><option value="low">🟢 여유</option></select></div>
         <div class="fg"><label>마감일</label><input type="date" id="f-due"/></div>
-        <div class="fg"><label>담당자명</label><input type="text" id="f-person" placeholder="담당자 이름"/></div>
+        <div class="fg"><label>담당자명</label><input type="text" id="f-person" placeholder="예: 진이"/></div>
+        <div class="fg"><label>팀명</label><input type="text" id="f-team" placeholder="예: 마케팅팀"/></div>
         <div class="fg fg-full"><label>상위 과제 (선택)</label><select id="f-parent"><option value="">— 독립 과제 —</option></select></div>
         <div class="fg fg-full" id="chain-wrap" style="display:none;"><label>후속 연결 방식</label>
           <select id="f-chain"><option value="sequential">🔗 순서 체인</option><option value="parallel">⚡ 병렬 진행</option><option value="approval">🔐 승인 게이트</option></select>
@@ -460,7 +461,8 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
       <div class="fg"><label>중요도</label><select id="am-imp"><option value="high">🔴 높음</option><option value="mid" selected>🟡 보통</option><option value="low">🟢 낮음</option></select></div>
       <div class="fg"><label>시급도</label><select id="am-urg"><option value="high">🔴 긴급</option><option value="mid" selected>🟡 보통</option><option value="low">🟢 여유</option></select></div>
       <div class="fg"><label>마감일</label><input type="date" id="am-due"/></div>
-      <div class="fg"><label>담당자명</label><input type="text" id="am-person" placeholder="담당자 이름"/></div>
+      <div class="fg"><label>담당자명</label><input type="text" id="am-person" placeholder="예: 진이"/></div>
+      <div class="fg"><label>팀명</label><input type="text" id="am-team" placeholder="예: 마케팅팀"/></div>
       <div class="fg atmod-full"><label>상위 과제 (선택)</label><select id="am-parent"><option value="">— 독립 과제 —</option></select></div>
       <div class="fg atmod-full" id="am-chain-wrap" style="display:none;"><label>후속 연결 방식</label>
         <select id="am-chain"><option value="sequential">🔗 순서 체인</option><option value="parallel">⚡ 병렬 진행</option><option value="approval">🔐 승인 게이트</option></select>
@@ -505,7 +507,8 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
       <div class="fg"><label>중요도</label><select id="cm-imp"><option value="high">🔴 높음</option><option value="mid" selected>🟡 보통</option><option value="low">🟢 낮음</option></select></div>
       <div class="fg"><label>시급도</label><select id="cm-urg"><option value="high">🔴 긴급</option><option value="mid" selected>🟡 보통</option><option value="low">🟢 여유</option></select></div>
       <div class="fg"><label>마감일</label><input type="date" id="cm-due"/></div>
-      <div class="fg"><label>담당자명</label><input type="text" id="cm-person" placeholder="담당자"/></div>
+      <div class="fg"><label>담당자명</label><input type="text" id="cm-person" placeholder="예: 진이"/></div>
+      <div class="fg"><label>팀명</label><input type="text" id="cm-team" placeholder="예: 마케팅팀"/></div>
       <div class="fg cmod-full"><label>연결 방식</label><select id="cm-chain"><option value="sequential">🔗 순서 체인</option><option value="parallel">⚡ 병렬 진행</option><option value="approval">🔐 승인 게이트</option></select></div>
     </div>
     <div class="cmod-foot">
@@ -680,6 +683,7 @@ function renderCard(t, isChild) {
     '<span class="b ' + il[0] + '">' + il[1] + '</span></div></div>' +
     '<div class="tm"><span class="mi ' + dlc + '"><i class="ti ti-calendar"></i>' + t.due + ' (' + dStr(t.due) + ')</span>' +
     (t.link ? '<span class="mi"><i class="ti ti-link"></i><a href="' + t.link + '" style="color:inherit;">문서</a></span>' : '') +
+    (t.team ? '<span class="mi"><i class="ti ti-building"></i>' + t.team + '</span>' : '') +
     '<div class="act-btns">' +
     (!isChild ? '<button class="act-btn blue" onclick="openChild(' + t.id + ')"><i class="ti ti-git-branch"></i> 후속 추가</button>' : '') +
     '<button class="act-btn green" onclick="completeTask(' + t.id + ')"><i class="ti ti-check"></i> 완료</button></div></div>' +
@@ -817,6 +821,7 @@ function addTask() {
   var t = {
     id: nextId++, name: name, cat: document.getElementById('f-cat').value,
     owner: ownerMode, person: document.getElementById('f-person').value || '진이',
+    team: document.getElementById('f-team').value || '',
     imp: document.getElementById('f-imp').value, urg: document.getElementById('f-urg').value,
     due: document.getElementById('f-due').value || TODAY,
     link: document.getElementById('f-link').value, memo: document.getElementById('f-memo').value,
@@ -825,13 +830,14 @@ function addTask() {
   tasks.push(t);
   if (pid) { var p = tasks.find(function(x) { return x.id === pid; }); if (p) p.expanded = true; }
   if (connected) {
-    apiAdd({ name: t.name, cat: t.cat, owner: t.owner === 'mine' ? '내 과제' : '위임 과제', person: t.person,
+    apiAdd({ name: t.name, cat: t.cat, owner: t.owner === 'mine' ? '내 과제' : '위임 과제',
+      person: t.person + (t.team ? ' / ' + t.team : ''),
       imp: t.imp === 'high' ? '높음' : t.imp === 'low' ? '낮음' : '보통',
       urg: t.urg === 'high' ? '긴급' : t.urg === 'low' ? '여유' : '보통',
       due: t.due, status: '대기', memo: t.memo || '', parentId: t.parentId || '', chainType: t.chainType || '' })
       .catch(function() {});
   }
-  ['f-name', 'f-person', 'f-link'].forEach(function(id) { document.getElementById(id).value = ''; });
+  ['f-name', 'f-person', 'f-team', 'f-link'].forEach(function(id) { document.getElementById(id).value = ''; });
   document.getElementById('f-memo').value = '';
   renderAll(); showTab('dash');
 }
@@ -855,12 +861,15 @@ function setCMO(m) {
 function addChild() {
   var name = document.getElementById('cm-name').value.trim();
   if (!name) { alert('후속 업무명을 입력해주세요.'); return; }
+  var team = document.getElementById('cm-team').value || '';
   tasks.push({ id: nextId++, name: name, cat: document.getElementById('cm-cat').value,
     owner: cmoMode, person: document.getElementById('cm-person').value || '진이',
+    team: team,
     imp: document.getElementById('cm-imp').value, urg: document.getElementById('cm-urg').value,
     due: document.getElementById('cm-due').value || TODAY,
     done: false, doneAt: null, parentId: modalPid, chainType: document.getElementById('cm-chain').value, expanded: false });
   var p = tasks.find(function(t) { return t.id === modalPid; }); if (p) p.expanded = true;
+  document.getElementById('cm-team').value = '';
   closeChild(); renderAll();
 }
 
@@ -1082,6 +1091,7 @@ var amOwnerMode = 'mine';
 function openAddModal() {
   document.getElementById('am-name').value = '';
   document.getElementById('am-person').value = '';
+  document.getElementById('am-team').value = '';
   document.getElementById('am-link').value = '';
   document.getElementById('am-memo').value = '';
   document.getElementById('am-due').value = TODAY;
@@ -1120,11 +1130,13 @@ function submitAddModal() {
   var name = document.getElementById('am-name').value.trim();
   if (!name) { alert('과제명을 입력해주세요.'); return; }
   var pid = document.getElementById('am-parent').value ? parseInt(document.getElementById('am-parent').value) : null;
+  var team = document.getElementById('am-team').value || '';
   var t = {
     id: nextId++, name: name,
     cat: document.getElementById('am-cat').value,
     owner: amOwnerMode,
     person: document.getElementById('am-person').value || '진이',
+    team: team,
     imp: document.getElementById('am-imp').value,
     urg: document.getElementById('am-urg').value,
     due: document.getElementById('am-due').value || TODAY,
@@ -1139,7 +1151,8 @@ function submitAddModal() {
   if (pid) { var p = tasks.find(function(x) { return x.id === pid; }); if (p) p.expanded = true; }
   if (connected) {
     apiAdd({ name: t.name, cat: t.cat, owner: t.owner === 'mine' ? '내 과제' : '위임 과제',
-      person: t.person, imp: t.imp === 'high' ? '높음' : t.imp === 'low' ? '낮음' : '보통',
+      person: t.person + (t.team ? ' / ' + t.team : ''),
+      imp: t.imp === 'high' ? '높음' : t.imp === 'low' ? '낮음' : '보통',
       urg: t.urg === 'high' ? '긴급' : t.urg === 'low' ? '여유' : '보통',
       due: t.due, status: '대기', memo: t.memo || '', parentId: t.parentId || '', chainType: t.chainType || '' })
       .catch(function() {});
