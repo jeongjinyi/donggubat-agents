@@ -209,6 +209,8 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 .send-btn{width:36px;height:36px;background:var(--g);color:#fff;border:none;border-radius:var(--rs);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .send-btn:hover{background:var(--gd);}
 .send-btn:disabled{background:var(--bg2);color:var(--t3);cursor:not-allowed;}
+.prompt-btn{padding:8px 12px;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);font-size:12px;color:var(--t2);cursor:pointer;text-align:left;transition:all .12s;}
+.prompt-btn:hover{background:var(--gl);border-color:var(--g);color:var(--gd);}
 
 /* ARCHIVE */
 .mn{display:flex;align-items:center;gap:10px;margin-bottom:1.1rem;}
@@ -400,30 +402,68 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
       <div class="chat-tb">
         <div class="ai-info">
           <div class="ai-dot"></div>
-          <div><div class="ai-name">동구밭 AI 에이전트</div><div class="ai-sub-lbl" id="ai-sub">자율 분석 ON</div></div>
+          <div><div class="ai-name">동구밭 AI 에이전트</div><div class="ai-sub-lbl">Claude.ai Pro 연동</div></div>
         </div>
         <div class="ctbs">
-          <button class="ctbtn" onclick="resetApiKey()" title="API 키 재설정"><i class="ti ti-key"></i></button>
           <button class="ctbtn" onclick="syncSheet()"><i class="ti ti-refresh"></i> 동기화</button>
           <button class="ctbtn on" onclick="runRisk()"><i class="ti ti-radar"></i> 위험 분석</button>
         </div>
       </div>
-      <div class="msgs" id="msgs"></div>
-      <div class="qrw" id="qrw"></div>
-      <div class="hb">
-        <span class="hint" onclick="qs('내일까지 예산안 검토해야 해, 긴급')">내일 예산안 긴급</span>
-        <span class="hs">|</span><span class="hint" onclick="qs('이번 주 금요일 쿠팡 ROAS 분석')">금요일 ROAS</span>
-        <span class="hs">|</span><span class="hint" onclick="qs('위험한 과제 알려줘')">위험 과제</span>
-        <span class="hs">|</span><span class="hint" onclick="qs('우선순위 다시 잡아줘')">우선순위</span>
-        <span class="hs">|</span><span class="hint" onclick="qs('오늘 브리핑해줘')">오늘 브리핑</span>
-      </div>
-      <div class="ia">
-        <div class="ir">
-          <textarea id="ai-inp" placeholder="자연어로 말하면 AI가 직접 처리합니다..." rows="1"
-            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAI();}"
-            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
-          <button class="send-btn" id="send-btn" onclick="sendAI()"><i class="ti ti-send"></i></button>
+
+      <!-- Claude.ai 연동 안내 패널 -->
+      <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;">
+
+        <!-- 위험 분석 자동 결과 -->
+        <div id="risk-panel" style="background:var(--gl);border:1px solid #5DCAA5;border-radius:var(--rr);padding:14px 16px;">
+          <div style="font-size:12px;font-weight:600;color:var(--gd);margin-bottom:8px;display:flex;align-items:center;gap:5px;">
+            <i class="ti ti-radar"></i> 자율 위험 감지 결과
+          </div>
+          <div id="risk-result" style="font-size:13px;color:var(--t);line-height:1.7;">분석 중...</div>
         </div>
+
+        <!-- 우선순위 -->
+        <div style="background:var(--bg);border:1px solid var(--bd);border-radius:var(--rr);padding:14px 16px;">
+          <div style="font-size:12px;font-weight:600;color:var(--t2);margin-bottom:8px;display:flex;align-items:center;gap:5px;">
+            <i class="ti ti-arrows-sort"></i> 지금 당장 해야 할 것 TOP 5
+          </div>
+          <div id="priority-result" style="font-size:13px;color:var(--t);line-height:1.9;">분석 중...</div>
+        </div>
+
+        <!-- Claude.ai 바로가기 -->
+        <div style="background:var(--bg);border:1.5px solid var(--g);border-radius:var(--rr);padding:16px 18px;">
+          <div style="font-size:13px;font-weight:600;color:var(--t);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+            <i class="ti ti-sparkles" style="color:var(--g);"></i> 더 깊은 AI 분석이 필요하다면
+          </div>
+          <div style="font-size:12.5px;color:var(--t2);line-height:1.7;margin-bottom:12px;">
+            Pro 플랜은 claude.ai에서 직접 대화할 때 포함돼요.<br>
+            아래 버튼으로 현재 과제 현황을 복사한 뒤 Claude.ai에 붙여넣으면 돼요.
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button onclick="copyTasksAndOpen()" style="padding:9px 18px;background:var(--g);color:#fff;border:none;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;">
+              <i class="ti ti-copy"></i> 과제 현황 복사 후 Claude.ai 열기
+            </button>
+            <button onclick="copyTasksOnly()" style="padding:9px 16px;background:transparent;color:var(--g);border:1px solid var(--g);border-radius:var(--rs);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:5px;">
+              <i class="ti ti-clipboard"></i> 현황만 복사
+            </button>
+          </div>
+          <div id="copy-msg" style="font-size:12px;color:var(--gd);margin-top:8px;display:none;">
+            ✅ 클립보드에 복사됐어요! Claude.ai에 붙여넣기 하세요.
+          </div>
+        </div>
+
+        <!-- 자주 쓰는 질문 템플릿 -->
+        <div style="background:var(--bg);border:1px solid var(--bd);border-radius:var(--rr);padding:14px 16px;">
+          <div style="font-size:12px;font-weight:600;color:var(--t2);margin-bottom:10px;display:flex;align-items:center;gap:5px;">
+            <i class="ti ti-message-2"></i> Claude.ai에서 이렇게 물어보세요
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <button onclick="copyPrompt('위험한 과제 분석해줘')" class="prompt-btn">📋 과제 현황 붙여넣기 + "위험한 과제 분석해줘"</button>
+            <button onclick="copyPrompt('지금 가장 먼저 해야 할 것 3가지 알려줘')" class="prompt-btn">📋 과제 현황 붙여넣기 + "지금 가장 먼저 해야 할 것 3가지 알려줘"</button>
+            <button onclick="copyPrompt('위임한 과제 중 지연되는 것 있어?')" class="prompt-btn">📋 과제 현황 붙여넣기 + "위임한 과제 중 지연되는 것 있어?"</button>
+            <button onclick="copyPrompt('이번 주 마감 과제 정리해줘')" class="prompt-btn">📋 과제 현황 붙여넣기 + "이번 주 마감 과제 정리해줘"</button>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -1298,9 +1338,80 @@ function showTab(t) {
   if (t === 'meeting') { popSelects(); if (!actionItems.length) initAI(); }
   if (t === 'archive') renderArchive();
   if (t === 'flow') renderFlow();
+  if (t === 'ai') { renderRiskPanel(); renderPriorityPanel(); }
 }
 
-function renderAll() { renderStats(); renderFilters(); renderTasks(); renderMatrix(); renderFlow(); popSelects(); }
+function renderRiskPanel() {
+  var act = tasks.filter(function(t) { return !t.done; });
+  var ov = act.filter(function(t) { return dd(t.due) < 0; });
+  var ug = act.filter(function(t) { return dd(t.due) >= 0 && dd(t.due) <= 2; });
+  var ap = act.filter(function(t) { return t.chainType === 'approval' && isBlocked(t); });
+  var el = document.getElementById('risk-result');
+  if (!el) return;
+  if (!ov.length && !ug.length && !ap.length) {
+    el.innerHTML = '<span style="color:var(--gd);">✅ 위험 과제 없음 — 모든 과제 정상 진행 중</span>';
+    return;
+  }
+  var lines = [];
+  if (ov.length) lines.push('🚨 <strong>마감 초과 ' + ov.length + '건</strong><br>' + ov.map(function(t) { return '&nbsp;&nbsp;• ' + t.name + ' <span style="color:var(--r);">(' + dStr(t.due) + ')</span>'; }).join('<br>'));
+  if (ug.length) lines.push('🔴 <strong>D-2 이내 ' + ug.length + '건</strong><br>' + ug.map(function(t) { return '&nbsp;&nbsp;• ' + t.name + ' <span style="color:var(--r);">(' + dStr(t.due) + ')</span>'; }).join('<br>'));
+  if (ap.length) lines.push('🔐 <strong>승인 대기 ' + ap.length + '건</strong><br>' + ap.map(function(t) { return '&nbsp;&nbsp;• ' + t.name; }).join('<br>'));
+  el.innerHTML = lines.join('<br><br>');
+}
+function renderPriorityPanel() {
+  var el = document.getElementById('priority-result');
+  if (!el) return;
+  var act = tasks.filter(function(t) { return !t.done && !t.parentId && !isBlocked(t); });
+  act.sort(function(a, b) { var s = { high: 0, mid: 1, low: 2 }; return (s[a.imp]+s[a.urg])-(s[b.imp]+s[b.urg])||dd(a.due)-dd(b.due); });
+  if (!act.length) { el.innerHTML = '<span style="color:var(--t3);">진행 중인 과제가 없어요</span>'; return; }
+  var colors = ['var(--r)', 'var(--r)', 'var(--a)', 'var(--a)', 'var(--g)'];
+  el.innerHTML = act.slice(0,5).map(function(t, i) {
+    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd);">' +
+      '<span style="width:20px;height:20px;border-radius:50%;background:' + colors[i] + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">' + (i+1) + '</span>' +
+      '<span style="flex:1;font-size:13px;color:var(--t);">' + t.name + '</span>' +
+      '<span style="font-size:11px;color:var(--t3);">' + dStr(t.due) + '</span>' +
+      '</div>';
+  }).join('');
+}
+function buildTaskContext() {
+  var act = tasks.filter(function(t) { return !t.done; });
+  var lines = ['=== 동구밭 과제 현황 (' + TODAY + ') ===\n'];
+  lines.push('진행 중 메인 과제: ' + act.filter(function(t) { return !t.parentId; }).length + '건');
+  lines.push('마감 임박(D-3): ' + act.filter(function(t) { return dd(t.due) <= 3; }).length + '건\n');
+  act.filter(function(t) { return !t.parentId; }).forEach(function(t) {
+    lines.push('- [' + t.cat + '] ' + t.name);
+    lines.push('  담당: ' + (t.owner === 'mine' ? '내 과제' : '위임·' + t.person) + (t.team ? '(' + t.team + ')' : ''));
+    lines.push('  마감: ' + t.due + ' (' + dStr(t.due) + ') | 중요도: ' + t.imp + ' 시급도: ' + t.urg);
+    var children = tasks.filter(function(c) { return c.parentId === t.id && !c.done; });
+    if (children.length) lines.push('  후속: ' + children.map(function(c) { return c.name + '(' + dStr(c.due) + ')'; }).join(', '));
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+function copyTasksAndOpen() {
+  var ctx = buildTaskContext();
+  navigator.clipboard.writeText(ctx).then(function() {
+    var msg = document.getElementById('copy-msg');
+    msg.style.display = 'block';
+    setTimeout(function() { msg.style.display = 'none'; }, 3000);
+    window.open('https://claude.ai', '_blank');
+  }).catch(function() { alert('복사 실패. 브라우저 권한을 확인해주세요.'); });
+}
+function copyTasksOnly() {
+  var ctx = buildTaskContext();
+  navigator.clipboard.writeText(ctx).then(function() {
+    var msg = document.getElementById('copy-msg');
+    msg.style.display = 'block';
+    setTimeout(function() { msg.style.display = 'none'; }, 3000);
+  }).catch(function() { alert('복사 실패.'); });
+}
+function copyPrompt(question) {
+  var ctx = buildTaskContext() + '\n\n' + question;
+  navigator.clipboard.writeText(ctx).then(function() {
+    window.open('https://claude.ai', '_blank');
+  }).catch(function() { alert('복사 실패.'); });
+}
+function renderAll() { renderStats(); renderFilters(); renderTasks(); renderMatrix(); renderFlow(); popSelects(); renderRiskPanel(); renderPriorityPanel(); }
 
 // ── add modal ──
 var amOwnerMode = 'mine';
