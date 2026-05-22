@@ -706,11 +706,12 @@ function connURL(url) {
     .then(function(d) {
       if (d.ok) {
         setCS('on');
-        document.getElementById('ai-sub').textContent = '자율 분석 ON · Sheets 연결됨';
+        var aiSub = document.getElementById('ai-sub');
+        if (aiSub) aiSub.textContent = '자율 분석 ON · Sheets 연결됨';
         syncSheet();
       } else setCS('err');
     })
-    .catch(function() { setCS('err'); });
+    .catch(function(e) { console.error('connURL error:', e); setCS('err'); });
 }
 function syncSheet() {
   if (!connected) { addAIMsg('먼저 <strong>시트 연결</strong> 버튼에서 URL을 연결해주세요.'); return; }
@@ -1157,22 +1158,27 @@ function addAIMsg(html, cls) {
   cls = cls || '';
   var el = document.createElement('div'); el.className = 'msg';
   el.innerHTML = '<div class="av av-b"><i class="ti ti-robot"></i></div><div class="bub bub-b' + (cls ? ' ' + cls : '') + '">' + html + '</div>';
-  document.getElementById('msgs').appendChild(el); scrl();
+  var msgs = document.getElementById('msgs');
+  if (msgs) { msgs.appendChild(el); scrl(); }
 }
 function addUserMsg(txt) {
   var el = document.createElement('div'); el.className = 'msg um';
   el.innerHTML = '<div class="av av-u">진</div><div class="bub bub-u">' + txt + '</div>';
-  document.getElementById('msgs').appendChild(el); scrl();
+  var msgs = document.getElementById('msgs');
+  if (msgs) { msgs.appendChild(el); scrl(); }
 }
 function addThink() {
   var el = document.createElement('div'); el.id = 'think'; el.className = 'msg';
   el.innerHTML = '<div class="av av-b"><i class="ti ti-robot"></i></div><div class="bub bub-b"><div class="typing"><div class="tdd"></div><div class="tdd"></div><div class="tdd"></div></div></div>';
-  document.getElementById('msgs').appendChild(el); scrl();
+  var msgs = document.getElementById('msgs');
+  if (msgs) { msgs.appendChild(el); scrl(); }
 }
 function rmThink() { var e = document.getElementById('think'); if (e) e.remove(); }
-function scrl() { var m = document.getElementById('msgs'); m.scrollTop = m.scrollHeight; }
+function scrl() { var m = document.getElementById('msgs'); if (m) m.scrollTop = m.scrollHeight; }
 function setQR(arr) {
-  document.getElementById('qrw').innerHTML = arr.map(function(r) {
+  var qrw = document.getElementById('qrw');
+  if (!qrw) return;
+  qrw.innerHTML = arr.map(function(r) {
     return '<button class="qr" onclick="qs(\'' + r.replace(/'/g, "\\'") + '\')">' + r + '</button>';
   }).join('');
 }
@@ -1279,8 +1285,10 @@ function sendAI() {
   }
 
   inp.value = ''; inp.style.height = 'auto';
-  document.getElementById('send-btn').disabled = true;
-  document.getElementById('qrw').innerHTML = '';
+  var sendBtn = document.getElementById('send-btn');
+  if (sendBtn) sendBtn.disabled = true;
+  var qrwEl = document.getElementById('qrw');
+  if (qrwEl) qrwEl.innerHTML = '';
   addUserMsg(text); addThink();
   var ctx = tasks.filter(function(t) { return !t.done; }).map(function(t) {
     return 'id:' + t.id + ' [' + t.cat + '] "' + t.name + '" | ' + (t.owner === 'mine' ? '내 과제' : '위임:' + t.person) +
@@ -1321,10 +1329,10 @@ function sendAI() {
       else if (/complete|완료/.test(lo)) setQR(['다음에 뭘 해야 해?', '전체 브리핑해줘']);
       else if (/risk|위험|분석/.test(lo)) setQR(['위험 과제 처리 순서 알려줘', '우선순위 재배치해줘']);
       else setQR(['위험한 과제 알려줘', '우선순위 다시 잡아줘', '오늘 브리핑해줘']);
-      document.getElementById('send-btn').disabled = false;
+      document.getElementById('send-btn') && (document.getElementById('send-btn').disabled = false);
     });
   })
-  .catch(function(e) { rmThink(); addAIMsg('오류: ' + e.message); document.getElementById('send-btn').disabled = false; });
+  .catch(function(e) { rmThink(); addAIMsg('오류: ' + e.message); document.getElementById('send-btn') && (document.getElementById('send-btn').disabled = false); });
 }
 
 // ── tabs ──
