@@ -403,6 +403,7 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
           <div><div class="ai-name">동구밭 AI 에이전트</div><div class="ai-sub-lbl" id="ai-sub">자율 분석 ON</div></div>
         </div>
         <div class="ctbs">
+          <button class="ctbtn" onclick="resetApiKey()" title="API 키 재설정"><i class="ti ti-key"></i></button>
           <button class="ctbtn" onclick="syncSheet()"><i class="ti ti-refresh"></i> 동기화</button>
           <button class="ctbtn on" onclick="runRisk()"><i class="ti ti-radar"></i> 위험 분석</button>
         </div>
@@ -438,6 +439,37 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
     <div id="arch-body"></div>
   </div>
 
+</div>
+
+<!-- 과제 수정 모달 -->
+<div class="mover" id="edit-modal">
+  <div class="atmod">
+    <div class="atmod-head">
+      <div class="atmod-title"><i class="ti ti-pencil" style="margin-right:5px;color:var(--b);"></i>과제 수정</div>
+      <button class="atmod-close" onclick="closeEdit()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="atmod-body">
+      <input type="hidden" id="edit-id"/>
+      <div class="fg atmod-full"><label>과제명 *</label><input type="text" id="edit-name" placeholder="과제 내용"/></div>
+      <div class="fg"><label>카테고리</label>
+        <select id="edit-cat"><option>회의</option><option>신제품</option><option>마케팅</option><option>영업이익</option><option>매출</option><option>팀 운영</option><option>기타</option></select>
+      </div>
+      <div class="fg"><label>담당 구분</label>
+        <div class="owner-tog"><button class="ot-btn on" id="edit-m" onclick="setEditOwner('mine')"><i class="ti ti-user"></i> 내 과제</button><button class="ot-btn" id="edit-d" onclick="setEditOwner('del')"><i class="ti ti-users"></i> 위임</button></div>
+      </div>
+      <div class="fg"><label>중요도</label><select id="edit-imp"><option value="high">🔴 높음</option><option value="mid">🟡 보통</option><option value="low">🟢 낮음</option></select></div>
+      <div class="fg"><label>시급도</label><select id="edit-urg"><option value="high">🔴 긴급</option><option value="mid">🟡 보통</option><option value="low">🟢 여유</option></select></div>
+      <div class="fg"><label>마감일</label><input type="date" id="edit-due"/></div>
+      <div class="fg"><label>담당자명</label><input type="text" id="edit-person" placeholder="예: 진이"/></div>
+      <div class="fg"><label>팀명</label><input type="text" id="edit-team" placeholder="예: 마케팅팀"/></div>
+      <div class="fg atmod-full"><label>관련 문서 링크</label><input type="text" id="edit-link" placeholder="https://..."/></div>
+      <div class="fg atmod-full"><label>메모</label><textarea id="edit-memo" style="width:100%;font-size:13px;padding:7px 10px;border:1px solid var(--bd2);border-radius:var(--rs);outline:none;font-family:var(--fn);resize:vertical;min-height:52px;"></textarea></div>
+    </div>
+    <div class="atmod-foot">
+      <button class="btn-cancel" onclick="closeEdit()">취소</button>
+      <button class="btn-ok" onclick="submitEdit()"><i class="ti ti-check"></i> 저장하기</button>
+    </div>
+  </div>
 </div>
 
 <!-- 플로팅 새 과제 버튼 -->
@@ -476,6 +508,37 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
     <div class="atmod-foot">
       <button class="btn-cancel" onclick="closeAddModal()">취소</button>
       <button class="btn-ok" onclick="submitAddModal()"><i class="ti ti-check"></i> 등록하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 과제 수정 모달 -->
+<div class="mover" id="edit-modal">
+  <div class="atmod">
+    <div class="atmod-head">
+      <div class="atmod-title"><i class="ti ti-pencil" style="margin-right:5px;color:var(--b);"></i>과제 수정</div>
+      <button class="atmod-close" onclick="closeEdit()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="atmod-body">
+      <input type="hidden" id="edit-id"/>
+      <div class="fg atmod-full"><label>과제명 *</label><input type="text" id="edit-name"/></div>
+      <div class="fg"><label>카테고리</label>
+        <select id="edit-cat"><option>회의</option><option>신제품</option><option>마케팅</option><option>영업이익</option><option>매출</option><option>팀 운영</option><option>기타</option></select>
+      </div>
+      <div class="fg"><label>담당 구분</label>
+        <div class="owner-tog"><button class="ot-btn on" id="edit-m" onclick="setEditOwner('mine')"><i class="ti ti-user"></i> 내 과제</button><button class="ot-btn" id="edit-d" onclick="setEditOwner('del')"><i class="ti ti-users"></i> 위임</button></div>
+      </div>
+      <div class="fg"><label>중요도</label><select id="edit-imp"><option value="high">🔴 높음</option><option value="mid">🟡 보통</option><option value="low">🟢 낮음</option></select></div>
+      <div class="fg"><label>시급도</label><select id="edit-urg"><option value="high">🔴 긴급</option><option value="mid">🟡 보통</option><option value="low">🟢 여유</option></select></div>
+      <div class="fg"><label>마감일</label><input type="date" id="edit-due"/></div>
+      <div class="fg"><label>담당자명</label><input type="text" id="edit-person" placeholder="예: 진이"/></div>
+      <div class="fg"><label>팀명</label><input type="text" id="edit-team" placeholder="예: 마케팅팀"/></div>
+      <div class="fg atmod-full"><label>관련 문서 링크</label><input type="text" id="edit-link" placeholder="https://..."/></div>
+      <div class="fg atmod-full"><label>메모</label><textarea id="edit-memo" style="width:100%;font-size:13px;padding:7px 10px;border:1px solid var(--bd2);border-radius:var(--rs);outline:none;font-family:var(--fn);resize:vertical;min-height:52px;"></textarea></div>
+    </div>
+    <div class="atmod-foot">
+      <button class="btn-cancel" onclick="closeEdit()">취소</button>
+      <button class="btn-ok" style="background:var(--b);" onclick="submitEdit()"><i class="ti ti-check"></i> 저장하기</button>
     </div>
   </div>
 </div>
@@ -692,12 +755,20 @@ function getTaskTeam(t) {
 }
 function renderTasks() {
   var roots = tasks.filter(function(t) {
-    if (t.done || t.parentId) return false;
+    if (t.parentId) return false;
     if (filterCat !== '전체' && t.cat !== filterCat) return false;
     if (filterTeam !== '전체' && getTaskTeam(t) !== filterTeam) return false;
+    if (t.done) {
+      // 완료됐어도 진행 중인 후속 업무가 있으면 대시보드에 표시
+      return tasks.some(function(c) { return c.parentId === t.id && !c.done; });
+    }
     return true;
   });
-  roots.sort(function(a, b) { var s = { high: 0, mid: 1, low: 2 }; return (s[a.imp] + s[a.urg]) - (s[b.imp] + s[b.urg]) || dd(a.due) - dd(b.due); });
+  roots.sort(function(a, b) {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    var s = { high: 0, mid: 1, low: 2 };
+    return (s[a.imp] + s[a.urg]) - (s[b.imp] + s[b.urg]) || dd(a.due) - dd(b.due);
+  });
   var lc = document.getElementById('tlist');
   if (!roots.length) { lc.innerHTML = '<div class="empty-s">해당 조건의 과제가 없습니다</div>'; return; }
   lc.innerHTML = roots.map(function(t) { return renderCard(t, false); }).join('');
@@ -709,24 +780,30 @@ function renderCard(t, isChild) {
   var children = tasks.filter(function(c) { return c.parentId === t.id && !c.done; });
   var prog = childProg(t.id);
   var il = impLabel(t.imp, t.urg);
-  var bc = isChild ? ('child-c ' + (t.owner === 'mine' ? 'mine' : 'delegated')) : (t.owner === 'mine' ? 'mine' : (t.imp === 'high' && t.urg === 'high' ? 'urgent' : 'delegated'));
+  var bc = isChild
+    ? ('child-c ' + (t.owner === 'mine' ? 'mine' : 'delegated'))
+    : (t.done ? 'done-card' : t.owner === 'mine' ? 'mine' : (t.imp === 'high' && t.urg === 'high' ? 'urgent' : 'delegated'));
   var gateStrip = (t.chainType === 'approval' && blocked) ? '<div class="gate-strip"><i class="ti ti-lock"></i> 상위 과제 완료/승인 후 활성화됩니다</div>' : '';
   var childrenHtml = (!isChild && t.expanded && children.length) ? '<div class="cw">' + children.map(function(c) { return renderCard(c, true); }).join('') + '</div>' : '';
   var expBtn = (!isChild && children.length) ? '<button class="exp-btn" onclick="toggleExp(' + t.id + ')"><i class="ti ti-chevron-' + (t.expanded ? 'up' : 'down') + '"></i> 후속 업무 ' + children.length + '건 ' + (t.expanded ? '접기' : '보기') + '</button>' : '';
   var progHtml = (!isChild && prog) ? '<div class="pw"><div class="pl-l"><span>후속 진행률</span><span>' + prog.done + '/' + prog.total + '</span></div><div class="pt"><div class="pf" style="width:' + prog.pct + '%"></div></div></div>' : '';
-  return '<div class="tc ' + bc + (blocked ? ' blocked' : '') + '">' +
-    '<div class="tt"><div class="tn' + (blocked ? ' strk' : '') + '">' + (isChild ? '↳ ' : '') + t.name + '</div>' +
-    '<div class="bgs"><span class="b b-cat">' + t.cat + '</span>' +
+  var doneBadge = t.done ? '<span class="b" style="background:#f1efe8;color:var(--t3);">✅ 완료</span>' : '';
+  return '<div class="tc ' + bc + (blocked ? ' blocked' : '') + (t.done ? ' blocked' : '') + '">' +
+    '<div class="tt"><div class="tn' + (t.done ? ' strk' : blocked ? ' strk' : '') + '">' + (isChild ? '↳ ' : '') + t.name + '</div>' +
+    '<div class="bgs">' + doneBadge + '<span class="b b-cat">' + t.cat + '</span>' +
     (t.chainType ? chainBadge(t.chainType) : '') +
-    (blocked ? '<span class="b b-blk">⏸ 대기</span>' : '') +
+    (blocked && !t.done ? '<span class="b b-blk">⏸ 대기</span>' : '') +
     '<span class="b ' + (t.owner === 'mine' ? 'b-mine' : 'b-del') + '">' + (t.owner === 'mine' ? '내 과제' : '위임·' + t.person) + '</span>' +
-    '<span class="b ' + il[0] + '">' + il[1] + '</span></div></div>' +
+    (!t.done ? '<span class="b ' + il[0] + '">' + il[1] + '</span>' : '') +
+    '</div></div>' +
     '<div class="tm"><span class="mi ' + dlc + '"><i class="ti ti-calendar"></i>' + t.due + ' (' + dStr(t.due) + ')</span>' +
     (t.link ? '<span class="mi"><i class="ti ti-link"></i><a href="' + t.link + '" style="color:inherit;">문서</a></span>' : '') +
     (t.team ? '<span class="mi"><i class="ti ti-building"></i>' + t.team + '</span>' : '') +
     '<div class="act-btns">' +
+    '<button class="act-btn" onclick="openEdit(' + t.id + ')" style="color:var(--b)"><i class="ti ti-pencil"></i> 수정</button>' +
     (!isChild ? '<button class="act-btn blue" onclick="openChild(' + t.id + ')"><i class="ti ti-git-branch"></i> 후속 추가</button>' : '') +
-    '<button class="act-btn green" onclick="completeTask(' + t.id + ')"><i class="ti ti-check"></i> 완료</button></div></div>' +
+    (!t.done ? '<button class="act-btn green" onclick="completeTask(' + t.id + ')"><i class="ti ti-check"></i> 완료</button>' : '') +
+    '</div></div>' +
     gateStrip + progHtml + expBtn + childrenHtml + '</div>';
 }
 function toggleExp(id) { var t = tasks.find(function(x) { return x.id === id; }); if (t) t.expanded = !t.expanded; renderTasks(); }
@@ -734,6 +811,74 @@ function completeTask(id) {
   var t = tasks.find(function(x) { return x.id === id; });
   t.done = true; t.doneAt = TODAY;
   if (connected) { apiDone(id, t.name).catch(function() {}); }
+  renderAll();
+}
+
+// ── edit task ──
+var editOwnerMode = 'mine';
+function setEditOwner(m) {
+  editOwnerMode = m;
+  document.getElementById('edit-m').className = 'ot-btn' + (m === 'mine' ? ' on' : '');
+  document.getElementById('edit-d').className = 'ot-btn' + (m === 'del' ? ' on' : '');
+}
+function openEdit(id) {
+  var t = tasks.find(function(x) { return x.id === id; });
+  if (!t) return;
+  document.getElementById('edit-id').value = t.id;
+  document.getElementById('edit-name').value = t.name;
+  document.getElementById('edit-cat').value = t.cat;
+  document.getElementById('edit-imp').value = t.imp;
+  document.getElementById('edit-urg').value = t.urg;
+  document.getElementById('edit-due').value = t.due;
+  document.getElementById('edit-link').value = t.link || '';
+  document.getElementById('edit-memo').value = t.memo || '';
+  // 담당자/팀 분리
+  var person = t.person || '';
+  var team = t.team || '';
+  if (!team && person.indexOf(' / ') > -1) {
+    var parts = person.split(' / ');
+    person = parts[0].trim();
+    team = parts[1].trim();
+  }
+  document.getElementById('edit-person').value = person;
+  document.getElementById('edit-team').value = team;
+  setEditOwner(t.owner);
+  document.getElementById('edit-modal').classList.add('open');
+  setTimeout(function() { document.getElementById('edit-name').focus(); }, 100);
+}
+function closeEdit() { document.getElementById('edit-modal').classList.remove('open'); }
+function submitEdit() {
+  var id = document.getElementById('edit-id').value;
+  var name = document.getElementById('edit-name').value.trim();
+  if (!name) { alert('과제명을 입력해주세요.'); return; }
+  var t = tasks.find(function(x) { return String(x.id) === String(id); });
+  if (!t) return;
+  var team = document.getElementById('edit-team').value.trim();
+  t.name    = name;
+  t.cat     = document.getElementById('edit-cat').value;
+  t.owner   = editOwnerMode;
+  t.person  = document.getElementById('edit-person').value.trim() || '진이';
+  t.team    = team;
+  t.imp     = document.getElementById('edit-imp').value;
+  t.urg     = document.getElementById('edit-urg').value;
+  t.due     = document.getElementById('edit-due').value || TODAY;
+  t.link    = document.getElementById('edit-link').value.trim();
+  t.memo    = document.getElementById('edit-memo').value.trim();
+  // 구글 시트 업데이트
+  if (connected) {
+    fetch(SURL, { method: 'POST', body: JSON.stringify({
+      action: 'updateTask', id: t.id,
+      updates: {
+        name: t.name, cat: t.cat,
+        owner: t.owner === 'mine' ? '내 과제' : '위임 과제',
+        person: t.person + (t.team ? ' / ' + t.team : ''),
+        imp: t.imp === 'high' ? '높음' : t.imp === 'low' ? '낮음' : '보통',
+        urg: t.urg === 'high' ? '긴급' : t.urg === 'low' ? '여유' : '보통',
+        due: t.due, link: t.link, memo: t.memo
+      }
+    })}).catch(function() {});
+  }
+  closeEdit();
   renderAll();
 }
 
@@ -1073,10 +1218,26 @@ function execTool(toolName, args) {
   });
 }
 
+function resetApiKey() {
+  var key = prompt('Anthropic API 키를 입력해주세요.\n(anthropic.com/console → API Keys에서 발급)\n\n비워두고 확인하면 기존 키가 삭제됩니다.');
+  if (key === null) return;
+  if (key.trim()) { localStorage.setItem('dg_api_key', key.trim()); addAIMsg('<span class="tk tk-g"><i class="ti ti-key"></i> API 키가 저장됐어요.</span>', 'bub-a'); }
+  else { localStorage.removeItem('dg_api_key'); addAIMsg('<span class="tk tk-a">API 키가 삭제됐어요. 다음 메시지 전송 시 다시 입력하세요.</span>'); }
+}
 function qs(t) { document.getElementById('ai-inp').value = t; sendAI(); }
 function sendAI() {
   var inp = document.getElementById('ai-inp');
   var text = inp.value.trim(); if (!text) return;
+
+  // API 키 확인
+  var apiKey = localStorage.getItem('dg_api_key') || '';
+  if (!apiKey) {
+    var key = prompt('Anthropic API 키를 입력해주세요.\n(claude.ai 계정 → API Keys에서 발급)\n\n입력한 키는 이 브라우저에만 저장됩니다.');
+    if (!key) return;
+    apiKey = key.trim();
+    localStorage.setItem('dg_api_key', apiKey);
+  }
+
   inp.value = ''; inp.style.height = 'auto';
   document.getElementById('send-btn').disabled = true;
   document.getElementById('qrw').innerHTML = '';
@@ -1092,7 +1253,13 @@ function sendAI() {
     'imp/urg: high/mid/low | owner: mine/del | 과제 추가→즉시 실행. 한국어 2-3문장.\n현재 과제:\n' + (ctx || '(없음)');
   aiHist.push({ role: 'user', content: text });
   fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
     body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, system: sys, messages: aiHist })
   })
   .then(function(r) { return r.json(); })
