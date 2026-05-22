@@ -59,6 +59,7 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 .fb{padding:5px 13px;font-size:12px;border:1px solid var(--bd2);border-radius:20px;cursor:pointer;background:transparent;color:var(--t2);transition:all .15s;}
 .fb.active{background:var(--g);border-color:var(--g);color:#fff;}
 .fb.team-active{background:var(--b);border-color:var(--b);color:#fff;}
+.fb.week-active{background:var(--p);border-color:var(--p);color:#fff;}
 .fr-label{font-size:11px;color:var(--t3);display:flex;align-items:center;gap:4px;padding:2px 4px;white-space:nowrap;}
 
 /* TASK CARDS */
@@ -318,6 +319,7 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
       <button class="sec-add-btn" onclick="openAddModal()"><i class="ti ti-plus"></i> 새 과제 추가</button>
     </div>
     <div class="sg" id="sg"></div>
+    <div class="fr" id="week-fr" style="margin-bottom:6px;"></div>
     <div class="fr" id="fr"></div>
     <div class="fr" id="team-fr" style="margin-top:-6px;margin-bottom:1rem;"></div>
     <div class="tlist" id="tlist"></div>
@@ -633,6 +635,7 @@ var cmoMode = 'mine';
 var modalPid = null;
 var filterCat = '전체';
 var filterTeam = '전체';
+var filterWeek = '전체';
 var archYear = 2026, archMonth = 5;
 var aiHist = [];
 var actionItems = [];
@@ -759,6 +762,45 @@ function renderStats() {
     '<div class="sc"><div class="sc-l">🔐 승인 대기</div><div class="sc-n" style="color:var(--p)">' + appr + '</div></div>' +
     '<div class="sc"><div class="sc-l">마감 임박 3일</div><div class="sc-n" style="color:var(--r)">' + urg + '</div></div>';
 }
+// 주단위 범위 계산
+function getWeekRange(offset) {
+  var now = new Date(TODAY);
+  var day = now.getDay(); // 0=일, 1=월 ... 6=토
+  var mondayOffset = day === 0 ? -6 : 1 - day; // 이번 주 월요일
+  var mon = new Date(now);
+  mon.setDate(now.getDate() + mondayOffset + offset * 7);
+  var sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  return { start: fmt(mon), end: fmt(sun) };
+}
+function inWeekRange(due, range) {
+  return due >= range.start && due <= range.end;
+}
+function renderWeekFilter() {
+  var weeks = [
+    { key: '전체', label: '전체' },
+    { key: '저번주', label: '저번주', range: getWeekRange(-1) },
+    { key: '이번주', label: '이번주', range: getWeekRange(0) },
+    { key: '다음주', label: '다음주', range: getWeekRange(1) },
+    { key: '지연', label: '⚠ 지연' },
+  ];
+  var wrap = document.getElementById('week-fr');
+  if (!wrap) return;
+  // 이번주/다음주/저번주 날짜 표시
+  var thisRange = getWeekRange(0);
+  var nextRange = getWeekRange(1);
+  var prevRange = getWeekRange(-1);
+  wrap.innerHTML =
+    '<span class="fr-label"><i class="ti ti-calendar-week"></i> 기간</span>' +
+    weeks.map(function(w) {
+      var sub = '';
+      if (w.key === '이번주') sub = ' <span style="font-size:10px;opacity:.7">(' + thisRange.start.slice(5) + '~' + thisRange.end.slice(5) + ')</span>';
+      if (w.key === '다음주') sub = ' <span style="font-size:10px;opacity:.7">(' + nextRange.start.slice(5) + '~' + nextRange.end.slice(5) + ')</span>';
+      if (w.key === '저번주') sub = ' <span style="font-size:10px;opacity:.7">(' + prevRange.start.slice(5) + '~' + prevRange.end.slice(5) + ')</span>';
+      return '<button class="fb' + (w.key === filterWeek ? ' week-active' : '') + '" onclick="setWeekFilter(\'' + w.key + '\')">' + w.label + sub + '</button>';
+    }).join('');
+}
+function setWeekFilter(w) { filterWeek = w; renderWeekFilter(); renderTasks(); }
 function renderFilters() {
   var cats = ['전체', '회의', '신제품', '마케팅', '영업이익', '매출', '팀 운영', '기타'];
   document.getElementById('fr').innerHTML =
@@ -767,6 +809,7 @@ function renderFilters() {
       return '<button class="fb' + (c === filterCat ? ' active' : '') + '" onclick="setFilter(\'' + c + '\')">' + c + '</button>';
     }).join('');
   renderTeamFilter();
+  renderWeekFilter();
 }
 function renderTeamFilter() {
   var teams = ['전체'];
@@ -798,16 +841,30 @@ function getTaskTeam(t) {
   return '';
 }
 function renderTasks() {
+  var prevRange = getWeekRange(-1);
+  var thisRange = getWeekRange(0);
+  var nextRange = getWeekRange(1);
   var roots = tasks.filter(function(t) {
     if (t.parentId) return false;
     if (filterCat !== '전체' && t.cat !== filterCat) return false;
     if (filterTeam !== '전체') {
-      // 본인 팀 또는 후속 업무 담당 팀으로 필터
       var myTeam = getTaskTeam(t);
       var childTeam = tasks.some(function(c) {
         return c.parentId === t.id && !c.done && getTaskTeam(c) === filterTeam;
       });
       if (myTeam !== filterTeam && !childTeam) return false;
+    }
+    // 주단위 필터
+    if (filterWeek !== '전체') {
+      if (filterWeek === '지연') {
+        if (t.done || dd(t.due) >= 0) return false;
+      } else if (filterWeek === '이번주') {
+        if (!inWeekRange(t.due, thisRange)) return false;
+      } else if (filterWeek === '다음주') {
+        if (!inWeekRange(t.due, nextRange)) return false;
+      } else if (filterWeek === '저번주') {
+        if (!inWeekRange(t.due, prevRange)) return false;
+      }
     }
     if (t.done) {
       return tasks.some(function(c) { return c.parentId === t.id && !c.done; });
