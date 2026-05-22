@@ -720,8 +720,8 @@ function syncSheet() {
     .then(function(r) { return r.json(); })
     .then(function(d) {
       if (d.ok) {
-        // 완료 과제도 포함 (아카이브에서 표시하기 위해)
-        tasks = d.tasks.map(function(t) {
+        // 완료·삭제 외 과제도 포함 (아카이브용)
+        tasks = d.tasks.filter(function(t) { return t.status !== '삭제'; }).map(function(t) {
           var isDone = t.status === '완료';
           return { id: t.id, name: t.name, cat: t.cat,
             owner: t.owner === '내 과제' ? 'mine' : 'del', person: t.person,
@@ -769,17 +769,13 @@ function renderFilters() {
   renderTeamFilter();
 }
 function renderTeamFilter() {
-  // 현재 과제에서 팀명 자동 추출
   var teams = ['전체'];
   tasks.filter(function(t) { return !t.done; }).forEach(function(t) {
-    var team = t.team || '';
-    if (!team && t.person && t.person.indexOf(' / ') > -1) {
-      team = t.person.split(' / ')[1].trim();
-    }
+    var team = getTaskTeam(t);
     if (team && teams.indexOf(team) === -1) teams.push(team);
   });
-  // 팀 필터가 2개 이상일 때만 표시 (전체 + 팀 1개 이상)
   var wrap = document.getElementById('team-fr');
+  if (!wrap) return;
   if (teams.length <= 1) { wrap.innerHTML = ''; return; }
   wrap.innerHTML =
     '<span class="fr-label"><i class="ti ti-users"></i> 팀</span>' +
@@ -794,13 +790,26 @@ function getTaskTeam(t) {
   if (t.person && t.person.indexOf(' / ') > -1) return t.person.split(' / ')[1].trim();
   return '';
 }
+function getTaskTeam(t) {
+  // team 필드 우선
+  if (t.team) return t.team;
+  // person 필드에서 " / " 로 분리된 팀명 추출 (예: "진이 / 인사총무")
+  if (t.person && t.person.indexOf(' / ') > -1) return t.person.split(' / ')[1].trim();
+  return '';
+}
 function renderTasks() {
   var roots = tasks.filter(function(t) {
     if (t.parentId) return false;
     if (filterCat !== '전체' && t.cat !== filterCat) return false;
-    if (filterTeam !== '전체' && getTaskTeam(t) !== filterTeam) return false;
+    if (filterTeam !== '전체') {
+      // 본인 팀 또는 후속 업무 담당 팀으로 필터
+      var myTeam = getTaskTeam(t);
+      var childTeam = tasks.some(function(c) {
+        return c.parentId === t.id && !c.done && getTaskTeam(c) === filterTeam;
+      });
+      if (myTeam !== filterTeam && !childTeam) return false;
+    }
     if (t.done) {
-      // 완료됐어도 진행 중인 후속 업무가 있으면 대시보드에 표시
       return tasks.some(function(c) { return c.parentId === t.id && !c.done; });
     }
     return true;
@@ -818,32 +827,38 @@ function renderCard(t, isChild) {
   var d = dd(t.due);
   var dlc = d < 0 ? 'oc' : d <= 3 ? 'dc' : '';
   var blocked = isBlocked(t);
-  var children = tasks.filter(function(c) { return c.parentId === t.id && !c.done; });
-  var prog = childProg(t.id);
-  var il = impLabel(t.imp, t.urg);
+  // 완료된 상위 과제는 blocked 클래스 제거 (흐리게 안 보이도록)
   var bc = isChild
     ? ('child-c ' + (t.owner === 'mine' ? 'mine' : 'delegated'))
     : (t.done ? 'done-card' : t.owner === 'mine' ? 'mine' : (t.imp === 'high' && t.urg === 'high' ? 'urgent' : 'delegated'));
+  var children = tasks.filter(function(c) { return c.parentId === t.id && !c.done; });
+  var prog = childProg(t.id);
+  var il = impLabel(t.imp, t.urg);
   var gateStrip = (t.chainType === 'approval' && blocked) ? '<div class="gate-strip"><i class="ti ti-lock"></i> 상위 과제 완료/승인 후 활성화됩니다</div>' : '';
   var childrenHtml = (!isChild && t.expanded && children.length) ? '<div class="cw">' + children.map(function(c) { return renderCard(c, true); }).join('') + '</div>' : '';
   var expBtn = (!isChild && children.length) ? '<button class="exp-btn" onclick="toggleExp(' + t.id + ')"><i class="ti ti-chevron-' + (t.expanded ? 'up' : 'down') + '"></i> 후속 업무 ' + children.length + '건 ' + (t.expanded ? '접기' : '보기') + '</button>' : '';
   var progHtml = (!isChild && prog) ? '<div class="pw"><div class="pl-l"><span>후속 진행률</span><span>' + prog.done + '/' + prog.total + '</span></div><div class="pt"><div class="pf" style="width:' + prog.pct + '%"></div></div></div>' : '';
   var doneBadge = t.done ? '<span class="b" style="background:#f1efe8;color:var(--t3);">✅ 완료</span>' : '';
-  return '<div class="tc ' + bc + (blocked ? ' blocked' : '') + (t.done ? ' blocked' : '') + '">' +
+  // 담당자 표시: person에 " / "가 있으면 이름만 추출
+  var personName = t.person || '';
+  if (personName.indexOf(' / ') > -1) personName = personName.split(' / ')[0].trim();
+  var teamName = getTaskTeam(t);
+  return '<div class="tc ' + bc + (blocked && !t.done ? ' blocked' : '') + '">' +
     '<div class="tt"><div class="tn' + (t.done ? ' strk' : blocked ? ' strk' : '') + '">' + (isChild ? '↳ ' : '') + t.name + '</div>' +
     '<div class="bgs">' + doneBadge + '<span class="b b-cat">' + t.cat + '</span>' +
     (t.chainType ? chainBadge(t.chainType) : '') +
     (blocked && !t.done ? '<span class="b b-blk">⏸ 대기</span>' : '') +
-    '<span class="b ' + (t.owner === 'mine' ? 'b-mine' : 'b-del') + '">' + (t.owner === 'mine' ? '내 과제' : '위임·' + t.person) + '</span>' +
+    '<span class="b ' + (t.owner === 'mine' ? 'b-mine' : 'b-del') + '">' + (t.owner === 'mine' ? '내 과제' : '위임·' + personName) + '</span>' +
     (!t.done ? '<span class="b ' + il[0] + '">' + il[1] + '</span>' : '') +
     '</div></div>' +
     '<div class="tm"><span class="mi ' + dlc + '"><i class="ti ti-calendar"></i>' + t.due + ' (' + dStr(t.due) + ')</span>' +
     (t.link ? '<span class="mi"><i class="ti ti-link"></i><a href="' + t.link + '" style="color:inherit;">문서</a></span>' : '') +
-    (t.team ? '<span class="mi"><i class="ti ti-building"></i>' + t.team + '</span>' : '') +
+    (teamName ? '<span class="mi"><i class="ti ti-building"></i>' + teamName + '</span>' : '') +
     '<div class="act-btns">' +
     '<button class="act-btn" onclick="openEdit(' + t.id + ')" style="color:var(--b)"><i class="ti ti-pencil"></i> 수정</button>' +
     (!isChild ? '<button class="act-btn blue" onclick="openChild(' + t.id + ')"><i class="ti ti-git-branch"></i> 후속 추가</button>' : '') +
     (!t.done ? '<button class="act-btn green" onclick="completeTask(' + t.id + ')"><i class="ti ti-check"></i> 완료</button>' : '') +
+    '<button class="act-btn" onclick="deleteTask(' + t.id + ')" style="color:var(--r)"><i class="ti ti-trash"></i> 삭제</button>' +
     '</div></div>' +
     gateStrip + progHtml + expBtn + childrenHtml + '</div>';
 }
@@ -852,6 +867,27 @@ function completeTask(id) {
   var t = tasks.find(function(x) { return x.id === id; });
   t.done = true; t.doneAt = TODAY;
   if (connected) { apiDone(id, t.name).catch(function() {}); }
+  renderAll();
+}
+function deleteTask(id) {
+  var t = tasks.find(function(x) { return x.id === id; });
+  if (!t) return;
+  // 후속 업무가 있으면 경고
+  var children = tasks.filter(function(c) { return c.parentId === id; });
+  var msg = '"' + t.name + '"을(를) 삭제할까요?';
+  if (children.length) msg += '\n\n⚠ 후속 업무 ' + children.length + '건도 함께 삭제됩니다.';
+  if (!confirm(msg)) return;
+  // 후속 업무 포함 삭제
+  var idsToDelete = [id].concat(children.map(function(c) { return c.id; }));
+  tasks = tasks.filter(function(x) { return idsToDelete.indexOf(x.id) === -1; });
+  // 구글 시트 삭제는 별도 API가 없으므로 상태를 "삭제"로 업데이트
+  if (connected) {
+    idsToDelete.forEach(function(did) {
+      fetch(SURL, { method: 'POST', body: JSON.stringify({
+        action: 'updateTask', id: did, updates: { status: '삭제' }
+      })}).catch(function() {});
+    });
+  }
   renderAll();
 }
 
