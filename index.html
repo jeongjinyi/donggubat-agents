@@ -60,6 +60,35 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 .fb.active{background:var(--g);border-color:var(--g);color:#fff;}
 .fb.team-active{background:var(--b);border-color:var(--b);color:#fff;}
 .fb.week-active{background:var(--p);border-color:var(--p);color:#fff;}
+/* Date range & filter row */
+.sec-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap;}
+.filter-row{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0;}
+.date-range-wrap{display:flex;align-items:center;gap:5px;flex-wrap:wrap;flex-shrink:0;}
+.dr-inp{font-size:12px;padding:5px 8px;border:1px solid var(--bd2);border-radius:var(--rs);background:var(--bg);color:var(--t);outline:none;width:128px;}
+.dr-inp:focus{border-color:var(--g);}
+.dr-btn{padding:5px 10px;font-size:12px;border:1px solid var(--bd2);border-radius:var(--rs);cursor:pointer;background:transparent;color:var(--t2);transition:all .12s;white-space:nowrap;}
+.dr-btn:hover{border-color:var(--g);color:var(--gd);}
+.dr-all{border-color:var(--p);color:var(--p);}
+/* Calendar */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:8px;}
+.cal-dow{text-align:center;font-size:11px;font-weight:600;color:var(--t3);padding:6px 0;}
+.cal-dow:first-child{color:var(--r);}
+.cal-dow:last-child{color:var(--b);}
+.cal-cell{min-height:90px;background:var(--bg);border:1px solid var(--bd);border-radius:var(--rs);padding:5px;position:relative;transition:background .12s;}
+.cal-cell:hover{background:var(--bg2);}
+.cal-cell.today{border-color:var(--g);background:var(--gl);}
+.cal-cell.other-month{background:var(--bg2);opacity:.6;}
+.cal-date{font-size:12px;font-weight:500;color:var(--t2);margin-bottom:3px;}
+.cal-cell.today .cal-date{color:var(--gd);font-weight:700;}
+.cal-cell.sun .cal-date{color:var(--r);}
+.cal-cell.sat .cal-date{color:var(--b);}
+.cal-task{font-size:10.5px;padding:2px 5px;border-radius:4px;margin-bottom:2px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;}
+.cal-task.mine{background:var(--gl);color:var(--gd);}
+.cal-task.del{background:var(--bl);color:#185FA5;}
+.cal-task.done{background:#f1efe8;color:var(--t3);text-decoration:line-through;}
+.cal-task.ov{background:var(--rl);color:#A32D2D;}
+.cal-more{font-size:10px;color:var(--t3);cursor:pointer;padding:1px 3px;}
+.cal-more:hover{color:var(--g);}
 .fr-label{font-size:11px;color:var(--t3);display:flex;align-items:center;gap:4px;padding:2px 4px;white-space:nowrap;}
 
 /* TASK CARDS */
@@ -302,11 +331,11 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 
 <div class="tabs">
   <div class="tab active" onclick="showTab('dash')"><i class="ti ti-layout-dashboard"></i> 대시보드</div>
+  <div class="tab" onclick="showTab('cal')"><i class="ti ti-calendar"></i> 캘린더</div>
   <div class="tab" onclick="showTab('flow')"><i class="ti ti-git-branch"></i> 흐름도</div>
   <div class="tab" onclick="showTab('meeting')"><i class="ti ti-speakerphone"></i> 회의 액션</div>
   <div class="tab" onclick="showTab('matrix')"><i class="ti ti-chart-scatter"></i> 우선순위</div>
   <div class="tab" onclick="showTab('add')"><i class="ti ti-plus"></i> 과제 추가</div>
-  <div class="tab" onclick="showTab('ai')"><i class="ti ti-robot"></i> AI 에이전트</div>
   <div class="tab" onclick="showTab('archive')"><i class="ti ti-calendar-stats"></i> 월별 아카이브</div>
 </div>
 
@@ -315,13 +344,22 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
   <!-- DASHBOARD -->
   <div class="sec active" id="sec-dash">
     <div class="sec-hdr">
-      <div></div>
-      <button class="sec-add-btn" onclick="openAddModal()"><i class="ti ti-plus"></i> 새 과제 추가</button>
+      <div class="filter-row">
+        <div class="fr" id="fr" style="margin-bottom:0;"></div>
+        <div class="fr" id="team-fr" style="margin-bottom:0;"></div>
+      </div>
+      <div class="date-range-wrap">
+        <input type="date" id="dr-start" class="dr-inp" onchange="renderTasks()"/>
+        <span style="font-size:12px;color:var(--t3);">~</span>
+        <input type="date" id="dr-end" class="dr-inp" onchange="renderTasks()"/>
+        <button class="dr-btn" onclick="setDateRange('this')">이번주</button>
+        <button class="dr-btn" onclick="setDateRange('next')">다음주</button>
+        <button class="dr-btn" onclick="setDateRange('prev')">저번주</button>
+        <button class="dr-btn dr-all" onclick="setDateRange('all')">전체</button>
+        <button class="sec-add-btn" onclick="openAddModal()"><i class="ti ti-plus"></i> 새 과제 추가</button>
+      </div>
     </div>
     <div class="sg" id="sg"></div>
-    <div class="fr" id="week-fr" style="margin-bottom:6px;"></div>
-    <div class="fr" id="fr"></div>
-    <div class="fr" id="team-fr" style="margin-top:-6px;margin-bottom:1rem;"></div>
     <div class="tlist" id="tlist"></div>
   </div>
 
@@ -398,77 +436,22 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
     </div>
   </div>
 
-  <!-- AI -->
-  <div class="sec" id="sec-ai">
-    <div class="chat-wrap">
-      <div class="chat-tb">
-        <div class="ai-info">
-          <div class="ai-dot"></div>
-          <div><div class="ai-name">동구밭 AI 에이전트</div><div class="ai-sub-lbl">Claude.ai Pro 연동</div></div>
-        </div>
-        <div class="ctbs">
-          <button class="ctbtn" onclick="syncSheet()"><i class="ti ti-refresh"></i> 동기화</button>
-          <button class="ctbtn on" onclick="runRisk()"><i class="ti ti-radar"></i> 위험 분석</button>
-        </div>
+  <!-- CALENDAR -->
+  <div class="sec" id="sec-cal">
+    <div class="sec-hdr">
+      <div class="mn" style="margin-bottom:0;">
+        <button onclick="changeCalMonth(-1)"><i class="ti ti-chevron-left"></i></button>
+        <div class="mn-title" id="cal-title" style="font-size:14px;"></div>
+        <button onclick="changeCalMonth(1)"><i class="ti ti-chevron-right"></i></button>
+        <button class="dr-btn" onclick="goCalToday()">오늘</button>
       </div>
-
-      <!-- Claude.ai 연동 안내 패널 -->
-      <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;">
-
-        <!-- 위험 분석 자동 결과 -->
-        <div id="risk-panel" style="background:var(--gl);border:1px solid #5DCAA5;border-radius:var(--rr);padding:14px 16px;">
-          <div style="font-size:12px;font-weight:600;color:var(--gd);margin-bottom:8px;display:flex;align-items:center;gap:5px;">
-            <i class="ti ti-radar"></i> 자율 위험 감지 결과
-          </div>
-          <div id="risk-result" style="font-size:13px;color:var(--t);line-height:1.7;">분석 중...</div>
-        </div>
-
-        <!-- 우선순위 -->
-        <div style="background:var(--bg);border:1px solid var(--bd);border-radius:var(--rr);padding:14px 16px;">
-          <div style="font-size:12px;font-weight:600;color:var(--t2);margin-bottom:8px;display:flex;align-items:center;gap:5px;">
-            <i class="ti ti-arrows-sort"></i> 지금 당장 해야 할 것 TOP 5
-          </div>
-          <div id="priority-result" style="font-size:13px;color:var(--t);line-height:1.9;">분석 중...</div>
-        </div>
-
-        <!-- Claude.ai 바로가기 -->
-        <div style="background:var(--bg);border:1.5px solid var(--g);border-radius:var(--rr);padding:16px 18px;">
-          <div style="font-size:13px;font-weight:600;color:var(--t);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
-            <i class="ti ti-sparkles" style="color:var(--g);"></i> 더 깊은 AI 분석이 필요하다면
-          </div>
-          <div style="font-size:12.5px;color:var(--t2);line-height:1.7;margin-bottom:12px;">
-            Pro 플랜은 claude.ai에서 직접 대화할 때 포함돼요.<br>
-            아래 버튼으로 현재 과제 현황을 복사한 뒤 Claude.ai에 붙여넣으면 돼요.
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button onclick="copyTasksAndOpen()" style="padding:9px 18px;background:var(--g);color:#fff;border:none;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;">
-              <i class="ti ti-copy"></i> 과제 현황 복사 후 Claude.ai 열기
-            </button>
-            <button onclick="copyTasksOnly()" style="padding:9px 16px;background:transparent;color:var(--g);border:1px solid var(--g);border-radius:var(--rs);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:5px;">
-              <i class="ti ti-clipboard"></i> 현황만 복사
-            </button>
-          </div>
-          <div id="copy-msg" style="font-size:12px;color:var(--gd);margin-top:8px;display:none;">
-            ✅ 클립보드에 복사됐어요! Claude.ai에 붙여넣기 하세요.
-          </div>
-        </div>
-
-        <!-- 자주 쓰는 질문 템플릿 -->
-        <div style="background:var(--bg);border:1px solid var(--bd);border-radius:var(--rr);padding:14px 16px;">
-          <div style="font-size:12px;font-weight:600;color:var(--t2);margin-bottom:10px;display:flex;align-items:center;gap:5px;">
-            <i class="ti ti-message-2"></i> Claude.ai에서 이렇게 물어보세요
-          </div>
-          <div style="display:flex;flex-direction:column;gap:6px;">
-            <button onclick="copyPrompt('위험한 과제 분석해줘')" class="prompt-btn">📋 과제 현황 붙여넣기 + "위험한 과제 분석해줘"</button>
-            <button onclick="copyPrompt('지금 가장 먼저 해야 할 것 3가지 알려줘')" class="prompt-btn">📋 과제 현황 붙여넣기 + "지금 가장 먼저 해야 할 것 3가지 알려줘"</button>
-            <button onclick="copyPrompt('위임한 과제 중 지연되는 것 있어?')" class="prompt-btn">📋 과제 현황 붙여넣기 + "위임한 과제 중 지연되는 것 있어?"</button>
-            <button onclick="copyPrompt('이번 주 마감 과제 정리해줘')" class="prompt-btn">📋 과제 현황 붙여넣기 + "이번 주 마감 과제 정리해줘"</button>
-          </div>
-        </div>
-
-      </div>
+      <button class="sec-add-btn" onclick="openAddModal()"><i class="ti ti-plus"></i> 새 과제 추가</button>
     </div>
+    <div id="cal-body"></div>
   </div>
+
+  <!-- AI (숨김) -->
+  <div class="sec" id="sec-ai" style="display:none!important;"></div>
 
   <!-- ARCHIVE -->
   <div class="sec" id="sec-archive">
@@ -636,7 +619,7 @@ var modalPid = null;
 var filterCat = '전체';
 var filterTeam = '전체';
 var filterWeek = '전체';
-var archYear = 2026, archMonth = 5;
+var archYear = new Date().getFullYear(), archMonth = new Date().getMonth() + 1;
 var aiHist = [];
 var actionItems = [];
 var nextMtgId = 1;
@@ -765,55 +748,37 @@ function renderStats() {
 // 주단위 범위 계산
 function getWeekRange(offset) {
   var now = new Date(TODAY);
-  var day = now.getDay(); // 0=일, 1=월 ... 6=토
-  var mondayOffset = day === 0 ? -6 : 1 - day; // 이번 주 월요일
+  var day = now.getDay();
+  var mondayOffset = day === 0 ? -6 : 1 - day;
   var mon = new Date(now);
   mon.setDate(now.getDate() + mondayOffset + offset * 7);
   var sun = new Date(mon);
   sun.setDate(mon.getDate() + 6);
   return { start: fmt(mon), end: fmt(sun) };
 }
-function inWeekRange(due, range) {
-  return due >= range.start && due <= range.end;
+function setDateRange(type) {
+  var s = document.getElementById('dr-start');
+  var e = document.getElementById('dr-end');
+  if (!s || !e) return;
+  if (type === 'all') { s.value = ''; e.value = ''; }
+  else if (type === 'this') { var r=getWeekRange(0); s.value=r.start; e.value=r.end; }
+  else if (type === 'next') { var r=getWeekRange(1); s.value=r.start; e.value=r.end; }
+  else if (type === 'prev') { var r=getWeekRange(-1); s.value=r.start; e.value=r.end; }
+  renderTasks();
 }
-function renderWeekFilter() {
-  var weeks = [
-    { key: '전체', label: '전체' },
-    { key: '저번주', label: '저번주', range: getWeekRange(-1) },
-    { key: '이번주', label: '이번주', range: getWeekRange(0) },
-    { key: '다음주', label: '다음주', range: getWeekRange(1) },
-    { key: '지연', label: '⚠ 지연' },
-  ];
-  var wrap = document.getElementById('week-fr');
-  if (!wrap) return;
-  // 이번주/다음주/저번주 날짜 표시
-  var thisRange = getWeekRange(0);
-  var nextRange = getWeekRange(1);
-  var prevRange = getWeekRange(-1);
-  wrap.innerHTML =
-    '<span class="fr-label"><i class="ti ti-calendar-week"></i> 기간</span>' +
-    weeks.map(function(w) {
-      var sub = '';
-      if (w.key === '이번주') sub = ' <span style="font-size:10px;opacity:.7">(' + thisRange.start.slice(5) + '~' + thisRange.end.slice(5) + ')</span>';
-      if (w.key === '다음주') sub = ' <span style="font-size:10px;opacity:.7">(' + nextRange.start.slice(5) + '~' + nextRange.end.slice(5) + ')</span>';
-      if (w.key === '저번주') sub = ' <span style="font-size:10px;opacity:.7">(' + prevRange.start.slice(5) + '~' + prevRange.end.slice(5) + ')</span>';
-      return '<button class="fb' + (w.key === filterWeek ? ' week-active' : '') + '" onclick="setWeekFilter(\'' + w.key + '\')">' + w.label + sub + '</button>';
-    }).join('');
-}
-function setWeekFilter(w) { filterWeek = w; renderWeekFilter(); renderTasks(); }
 function renderFilters() {
   var cats = ['전체', '회의', '신제품', '마케팅', '영업이익', '매출', '팀 운영', '기타'];
-  document.getElementById('fr').innerHTML =
+  var frEl = document.getElementById('fr');
+  if (frEl) frEl.innerHTML =
     '<span class="fr-label"><i class="ti ti-tag"></i> 카테고리</span>' +
     cats.map(function(c) {
       return '<button class="fb' + (c === filterCat ? ' active' : '') + '" onclick="setFilter(\'' + c + '\')">' + c + '</button>';
     }).join('');
   renderTeamFilter();
-  renderWeekFilter();
 }
 function renderTeamFilter() {
   var teams = ['전체'];
-  tasks.filter(function(t) { return !t.done; }).forEach(function(t) {
+  tasks.forEach(function(t) {
     var team = getTaskTeam(t);
     if (team && teams.indexOf(team) === -1) teams.push(team);
   });
@@ -841,9 +806,8 @@ function getTaskTeam(t) {
   return '';
 }
 function renderTasks() {
-  var prevRange = getWeekRange(-1);
-  var thisRange = getWeekRange(0);
-  var nextRange = getWeekRange(1);
+  var drStart = (document.getElementById('dr-start') || {}).value || '';
+  var drEnd   = (document.getElementById('dr-end')   || {}).value || '';
   var roots = tasks.filter(function(t) {
     if (t.parentId) return false;
     if (filterCat !== '전체' && t.cat !== filterCat) return false;
@@ -854,18 +818,9 @@ function renderTasks() {
       });
       if (myTeam !== filterTeam && !childTeam) return false;
     }
-    // 주단위 필터
-    if (filterWeek !== '전체') {
-      if (filterWeek === '지연') {
-        if (t.done || dd(t.due) >= 0) return false;
-      } else if (filterWeek === '이번주') {
-        if (!inWeekRange(t.due, thisRange)) return false;
-      } else if (filterWeek === '다음주') {
-        if (!inWeekRange(t.due, nextRange)) return false;
-      } else if (filterWeek === '저번주') {
-        if (!inWeekRange(t.due, prevRange)) return false;
-      }
-    }
+    // 날짜 범위 필터
+    if (drStart && t.due < drStart) return false;
+    if (drEnd   && t.due > drEnd)   return false;
     if (t.done) {
       return tasks.some(function(c) { return c.parentId === t.id && !c.done; });
     }
@@ -1429,17 +1384,89 @@ function sendAI() {
 }
 
 // ── tabs ──
+var calYear = new Date().getFullYear();
+var calMonth = new Date().getMonth() + 1;
+
 function showTab(t) {
   document.querySelectorAll('.sec').forEach(function(s) { s.classList.remove('active'); });
   document.querySelectorAll('.tab').forEach(function(s) { s.classList.remove('active'); });
   document.getElementById('sec-' + t).classList.add('active');
-  var map = { dash: 0, flow: 1, meeting: 2, matrix: 3, add: 4, ai: 5, archive: 6 };
-  document.querySelectorAll('.tab')[map[t]].classList.add('active');
+  var map = { dash: 0, cal: 1, flow: 2, meeting: 3, matrix: 4, add: 5, archive: 6 };
+  if (map[t] !== undefined) document.querySelectorAll('.tab')[map[t]].classList.add('active');
   if (t === 'add') popSelects();
   if (t === 'meeting') { popSelects(); if (!actionItems.length) initAI(); }
   if (t === 'archive') renderArchive();
   if (t === 'flow') renderFlow();
-  if (t === 'ai') { renderRiskPanel(); renderPriorityPanel(); }
+  if (t === 'cal') renderCalendar();
+}
+
+// ── calendar ──
+function changeCalMonth(d) {
+  calMonth += d;
+  if (calMonth > 12) { calMonth = 1; calYear++; }
+  if (calMonth < 1)  { calMonth = 12; calYear--; }
+  renderCalendar();
+}
+function goCalToday() {
+  calYear = new Date().getFullYear();
+  calMonth = new Date().getMonth() + 1;
+  renderCalendar();
+}
+function renderCalendar() {
+  document.getElementById('cal-title').textContent = calYear + '년 ' + calMonth + '월';
+  var pad = function(n) { return String(n).padStart(2,'0'); };
+  var firstDay = new Date(calYear, calMonth - 1, 1).getDay(); // 0=일
+  var daysInMonth = new Date(calYear, calMonth, 0).getDate();
+  var daysInPrev = new Date(calYear, calMonth - 1, 0).getDate();
+  var pref = calYear + '-' + pad(calMonth);
+
+  // 이 달 과제 맵 (날짜 → 과제들)
+  var taskMap = {};
+  tasks.forEach(function(t) {
+    if (!t.due) return;
+    var key = t.due;
+    if (!taskMap[key]) taskMap[key] = [];
+    taskMap[key].push(t);
+  });
+
+  var dows = ['일','월','화','수','목','금','토'];
+  var html = '<div class="cal-grid">' +
+    dows.map(function(d) { return '<div class="cal-dow">' + d + '</div>'; }).join('');
+
+  // 이전달 채우기
+  for (var i = firstDay - 1; i >= 0; i--) {
+    var d = daysInPrev - i;
+    html += '<div class="cal-cell other-month"><div class="cal-date">' + d + '</div></div>';
+  }
+
+  // 이번달
+  for (var d = 1; d <= daysInMonth; d++) {
+    var dateStr = calYear + '-' + pad(calMonth) + '-' + pad(d);
+    var dow = new Date(calYear, calMonth - 1, d).getDay();
+    var isToday = dateStr === TODAY;
+    var cls = 'cal-cell' + (isToday ? ' today' : '') + (dow === 0 ? ' sun' : dow === 6 ? ' sat' : '') +
+      (new Date(calYear, calMonth-1, d) < new Date(calYear, calMonth-1, 1) ? ' other-month' : '');
+    var dayTasks = taskMap[dateStr] || [];
+    var maxShow = 3;
+    var taskHtml = dayTasks.slice(0, maxShow).map(function(t) {
+      var tc = t.done ? 'done' : (dd(t.due) < 0 && !t.done ? 'ov' : t.owner === 'mine' ? 'mine' : 'del');
+      var name = t.name.length > 14 ? t.name.slice(0,14) + '…' : t.name;
+      return '<div class="cal-task ' + tc + '" onclick="openEdit(' + t.id + ')" title="' + t.name + '">' + name + '</div>';
+    }).join('');
+    if (dayTasks.length > maxShow) {
+      taskHtml += '<div class="cal-more">+' + (dayTasks.length - maxShow) + '건 더</div>';
+    }
+    html += '<div class="' + cls + '"><div class="cal-date">' + d + '</div>' + taskHtml + '</div>';
+  }
+
+  // 다음달 채우기 (6줄 완성)
+  var total = firstDay + daysInMonth;
+  var remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (var d = 1; d <= remaining; d++) {
+    html += '<div class="cal-cell other-month"><div class="cal-date">' + d + '</div></div>';
+  }
+  html += '</div>';
+  document.getElementById('cal-body').innerHTML = html;
 }
 
 function renderRiskPanel() {
@@ -1512,7 +1539,7 @@ function copyPrompt(question) {
     window.open('https://claude.ai', '_blank');
   }).catch(function() { alert('복사 실패.'); });
 }
-function renderAll() { renderStats(); renderFilters(); renderTasks(); renderMatrix(); renderFlow(); popSelects(); renderRiskPanel(); renderPriorityPanel(); }
+function renderAll() { renderStats(); renderFilters(); renderTasks(); renderMatrix(); renderFlow(); popSelects(); }
 
 // ── add modal ──
 var amOwnerMode = 'mine';
