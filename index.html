@@ -63,6 +63,9 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 /* Date range & filter row */
 .sec-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap;}
 .filter-row{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0;}
+.dropdown-wrap{display:flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--bd2);border-radius:var(--rs);padding:4px 10px;transition:border-color .15s;}
+.dropdown-wrap:focus-within{border-color:var(--g);}
+.filter-select{font-size:12.5px;color:var(--t);background:transparent;border:none;outline:none;cursor:pointer;font-family:var(--fn);padding:2px 0;}
 .date-range-wrap{display:flex;align-items:center;gap:5px;flex-wrap:wrap;flex-shrink:0;}
 .dr-inp{font-size:12px;padding:5px 8px;border:1px solid var(--bd2);border-radius:var(--rs);background:var(--bg);color:var(--t);outline:none;width:128px;}
 .dr-inp:focus{border-color:var(--g);}
@@ -351,8 +354,22 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
   <div class="sec active" id="sec-dash">
     <div class="sec-hdr">
       <div class="filter-row">
-        <div class="fr" id="fr" style="margin-bottom:0;"></div>
-        <div class="fr" id="team-fr" style="margin-bottom:0;"></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <div class="dropdown-wrap">
+            <i class="ti ti-tag" style="color:var(--t3);font-size:13px;"></i>
+            <select class="filter-select" id="cat-select" onchange="setFilter(this.value)">
+              <option value="전체">전체 카테고리</option>
+              <option>회의</option><option>신제품</option><option>마케팅</option>
+              <option>영업이익</option><option>매출</option><option>팀 운영</option><option>기타</option>
+            </select>
+          </div>
+          <div class="dropdown-wrap">
+            <i class="ti ti-users" style="color:var(--t3);font-size:13px;"></i>
+            <select class="filter-select" id="team-select" onchange="setTeamFilter(this.value)">
+              <option value="전체">전체 팀</option>
+            </select>
+          </div>
+        </div>
       </div>
       <div class="date-range-wrap">
         <input type="date" id="dr-start" class="dr-inp" onchange="renderTasks()"/>
@@ -421,7 +438,7 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
       <div class="fg-grid">
         <div class="fg fg-full"><label>과제명</label><input type="text" id="f-name" placeholder="과제 내용을 입력하세요"/></div>
         <div class="fg"><label>카테고리</label>
-          <select id="f-cat"><option>회의</option><option>신제품</option><option>마케팅</option><option>영업이익</option><option>매출</option><option>팀 운영</option><option>기타</option></select>
+          <select id="f-cat" onchange="handleCatChange(this)"><option>회의</option><option>신제품</option><option>마케팅</option><option>영업이익</option><option>매출</option><option>팀 운영</option><option>기타</option><option value="__new__">+ 새 카테고리 추가...</option></select>
         </div>
         <div class="fg"><label>담당 구분</label>
           <div class="owner-tog"><button class="ot-btn on" id="ot-m" onclick="setOwner('mine')"><i class="ti ti-user"></i> 내 과제</button><button class="ot-btn" id="ot-d" onclick="setOwner('del')"><i class="ti ti-users"></i> 위임</button></div>
@@ -483,7 +500,7 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
       <input type="hidden" id="edit-id"/>
       <div class="fg atmod-full"><label>과제명 *</label><input type="text" id="edit-name" placeholder="과제 내용"/></div>
       <div class="fg"><label>카테고리</label>
-        <select id="edit-cat"><option>회의</option><option>신제품</option><option>마케팅</option><option>영업이익</option><option>매출</option><option>팀 운영</option><option>기타</option></select>
+        <select id="edit-cat" onchange="handleCatChange(this)"><option>회의</option><option>신제품</option><option>마케팅</option><option>영업이익</option><option>매출</option><option>팀 운영</option><option>기타</option><option value="__new__">+ 새 카테고리 추가...</option></select>
       </div>
       <div class="fg"><label>담당 구분</label>
         <div class="owner-tog"><button class="ot-btn on" id="edit-m" onclick="setEditOwner('mine')"><i class="ti ti-user"></i> 내 과제</button><button class="ot-btn" id="edit-d" onclick="setEditOwner('del')"><i class="ti ti-users"></i> 위임</button></div>
@@ -519,7 +536,7 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
     <div class="atmod-body">
       <div class="fg atmod-full"><label>과제명 *</label><input type="text" id="am-name" placeholder="과제 내용을 입력하세요"/></div>
       <div class="fg"><label>카테고리</label>
-        <select id="am-cat"><option>회의</option><option>신제품</option><option>마케팅</option><option>영업이익</option><option>매출</option><option>팀 운영</option><option>기타</option></select>
+        <select id="am-cat" onchange="handleCatChange(this)"><option>회의</option><option>신제품</option><option>마케팅</option><option>영업이익</option><option>매출</option><option>팀 운영</option><option>기타</option><option value="__new__">+ 새 카테고리 추가...</option></select>
       </div>
       <div class="fg"><label>담당 구분</label>
         <div class="owner-tog"><button class="ot-btn on" id="am-m" onclick="setAMOwner('mine')"><i class="ti ti-user"></i> 내 과제</button><button class="ot-btn" id="am-d" onclick="setAMOwner('del')"><i class="ti ti-users"></i> 위임</button></div>
@@ -554,7 +571,7 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
       <input type="hidden" id="edit-id"/>
       <div class="fg atmod-full"><label>과제명 *</label><input type="text" id="edit-name"/></div>
       <div class="fg"><label>카테고리</label>
-        <select id="edit-cat"><option>회의</option><option>신제품</option><option>마케팅</option><option>영업이익</option><option>매출</option><option>팀 운영</option><option>기타</option></select>
+        <select id="edit-cat" onchange="handleCatChange(this)"><option>회의</option><option>신제품</option><option>마케팅</option><option>영업이익</option><option>매출</option><option>팀 운영</option><option>기타</option><option value="__new__">+ 새 카테고리 추가...</option></select>
       </div>
       <div class="fg"><label>담당 구분</label>
         <div class="owner-tog"><button class="ot-btn on" id="edit-m" onclick="setEditOwner('mine')"><i class="ti ti-user"></i> 내 과제</button><button class="ot-btn" id="edit-d" onclick="setEditOwner('del')"><i class="ti ti-users"></i> 위임</button></div>
@@ -600,7 +617,7 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
     <div class="cmod-body">
       <div class="fg cmod-full"><label>후속 업무명</label><input type="text" id="cm-name" placeholder="후속 업무 내용"/></div>
       <div class="fg"><label>담당</label><div class="owner-tog"><button class="ot-btn on" id="cm-m" onclick="setCMO('mine')"><i class="ti ti-user"></i> 내</button><button class="ot-btn" id="cm-d" onclick="setCMO('del')"><i class="ti ti-users"></i> 위임</button></div></div>
-      <div class="fg"><label>카테고리</label><select id="cm-cat"><option>회의</option><option>신제품</option><option>마케팅</option><option>영업이익</option><option>매출</option><option>팀 운영</option><option>기타</option></select></div>
+      <div class="fg"><label>카테고리</label><select id="cm-cat" onchange="handleCatChange(this)"><option>회의</option><option>신제품</option><option>마케팅</option><option>영업이익</option><option>매출</option><option>팀 운영</option><option>기타</option><option value="__new__">+ 새 카테고리 추가...</option></select></div>
       <div class="fg"><label>중요도</label><select id="cm-imp"><option value="high">🔴 높음</option><option value="mid" selected>🟡 보통</option><option value="low">🟢 낮음</option></select></div>
       <div class="fg"><label>시급도</label><select id="cm-urg"><option value="high">🔴 긴급</option><option value="mid" selected>🟡 보통</option><option value="low">🟢 여유</option></select></div>
       <div class="fg"><label>마감일</label><input type="date" id="cm-due"/></div>
@@ -772,14 +789,52 @@ function setDateRange(type) {
   else if (type === 'prev') { var r=getWeekRange(-1); s.value=r.start; e.value=r.end; }
   renderTasks();
 }
+// 카테고리 목록 (커스텀 추가 가능)
+var CATS = JSON.parse(localStorage.getItem('dg_cats') || '["회의","신제품","마케팅","영업이익","매출","팀 운영","기타"]');
+function saveCats() { localStorage.setItem('dg_cats', JSON.stringify(CATS)); }
+function addNewCat(name) {
+  if (!name || CATS.indexOf(name) > -1) return;
+  CATS.push(name);
+  saveCats();
+  updateAllCatSelects();
+}
+
+function updateAllCatSelects() {
+  var optHtml = CATS.map(function(c) { return '<option value="' + c + '">' + c + '</option>'; }).join('') +
+    '<option value="__new__">+ 새 카테고리 추가...</option>';
+  ['f-cat','am-cat','cm-cat','edit-cat'].forEach(function(id) {
+    var sel = document.getElementById(id);
+    if (!sel) return;
+    var cur = sel.value;
+    sel.innerHTML = optHtml;
+    if (cur && cur !== '__new__') sel.value = cur;
+  });
+  // 대시보드 카테고리 드롭다운
+  var catSel = document.getElementById('cat-select');
+  if (catSel) {
+    var cur2 = catSel.value;
+    catSel.innerHTML = '<option value="전체">전체 카테고리</option>' +
+      CATS.map(function(c) { return '<option value="' + c + '">' + c + '</option>'; }).join('');
+    catSel.value = cur2 || '전체';
+  }
+}
+
+function handleCatChange(selectEl) {
+  if (selectEl.value === '__new__') {
+    var name = prompt('새 카테고리 이름을 입력해주세요:');
+    if (name && name.trim()) {
+      addNewCat(name.trim());
+      selectEl.value = name.trim();
+    } else {
+      selectEl.value = CATS[0];
+    }
+  }
+}
+
 function renderFilters() {
-  var cats = ['전체', '회의', '신제품', '마케팅', '영업이익', '매출', '팀 운영', '기타'];
-  var frEl = document.getElementById('fr');
-  if (frEl) frEl.innerHTML =
-    '<span class="fr-label"><i class="ti ti-tag"></i> 카테고리</span>' +
-    cats.map(function(c) {
-      return '<button class="fb' + (c === filterCat ? ' active' : '') + '" onclick="setFilter(\'' + c + '\')">' + c + '</button>';
-    }).join('');
+  // 드롭다운 방식 — cat-select, team-select는 HTML에 이미 있음
+  var catSel = document.getElementById('cat-select');
+  if (catSel) catSel.value = filterCat;
   renderTeamFilter();
 }
 function renderTeamFilter() {
@@ -788,26 +843,19 @@ function renderTeamFilter() {
     var team = getTaskTeam(t);
     if (team && teams.indexOf(team) === -1) teams.push(team);
   });
-  var wrap = document.getElementById('team-fr');
-  if (!wrap) return;
-  if (teams.length <= 1) { wrap.innerHTML = ''; return; }
-  wrap.innerHTML =
-    '<span class="fr-label"><i class="ti ti-users"></i> 팀</span>' +
-    teams.map(function(tm) {
-      return '<button class="fb' + (tm === filterTeam ? ' team-active' : '') + '" onclick="setTeamFilter(\'' + tm.replace(/'/g, "\\'") + '\')">' + tm + '</button>';
+  var sel = document.getElementById('team-select');
+  if (!sel) return;
+  var cur = sel.value || '전체';
+  sel.innerHTML = '<option value="전체">전체 팀</option>' +
+    teams.filter(function(t) { return t !== '전체'; }).map(function(tm) {
+      return '<option value="' + tm + '">' + tm + '</option>';
     }).join('');
+  sel.value = (teams.indexOf(cur) > -1) ? cur : '전체';
 }
-function setFilter(c) { filterCat = c; renderFilters(); renderTasks(); }
-function setTeamFilter(tm) { filterTeam = tm; renderTeamFilter(); renderTasks(); }
+function setFilter(c) { filterCat = c; renderTasks(); }
+function setTeamFilter(tm) { filterTeam = tm; renderTasks(); }
 function getTaskTeam(t) {
   if (t.team) return t.team;
-  if (t.person && t.person.indexOf(' / ') > -1) return t.person.split(' / ')[1].trim();
-  return '';
-}
-function getTaskTeam(t) {
-  // team 필드 우선
-  if (t.team) return t.team;
-  // person 필드에서 " / " 로 분리된 팀명 추출 (예: "진이 / 인사총무")
   if (t.person && t.person.indexOf(' / ') > -1) return t.person.split(' / ')[1].trim();
   return '';
 }
@@ -1556,7 +1604,7 @@ function copyPrompt(question) {
     window.open('https://claude.ai', '_blank');
   }).catch(function() { alert('복사 실패.'); });
 }
-function renderAll() { renderStats(); renderFilters(); renderTasks(); renderMatrix(); renderFlow(); popSelects(); }
+function renderAll() { renderStats(); renderFilters(); renderTasks(); renderMatrix(); renderFlow(); popSelects(); updateAllCatSelects(); }
 
 // ── add modal ──
 var amOwnerMode = 'mine';
@@ -1640,13 +1688,9 @@ function submitAddModal() {
   document.getElementById('cm-due').value = TODAY;
   document.getElementById('m-date').value = TODAY;
   initAI();
+  updateAllCatSelects(); // 카테고리 드롭다운 초기화
   renderAll();
-  addAIMsg('안녕하세요! 동구밭 AI 에이전트입니다 🌱<br>' +
-    tCard('plug', '구글 시트 연결', '상단 <strong>시트 연결</strong> 버튼 → Apps Script URL 입력 → 자동 동기화') +
-    tCard('terminal', '자연어 예시', '"내일까지 예산안 검토해야 해, 긴급"<br>"이번 주 금요일 쿠팡 ROAS 분석"<br>"위험한 과제 알려줘"'), 'bub-a');
-  setQR(['위험한 과제 알려줘', '우선순위 다시 잡아줘', '오늘 브리핑해줘']);
   if (SURL) connURL(SURL);
-  setTimeout(runRisk, 1500);
 })();
 </script>
 </body>
