@@ -3,14 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>동구밭 AI 과제 관리 에이전트</title>
+<title>태스크 관리</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 <style>
 :root{
-  --g:#1D9E75;--gl:#E1F5EE;--gd:#0F6E56;
+  --g:#378ADD;--gl:#E6F1FB;--gd:#185FA5;
   --b:#378ADD;--bl:#E6F1FB;
-  --r:#E24B4A;--rl:#FCEBEB;
-  --a:#EF9F27;--al:#FAEEDA;
+  --o:#F07B30;--ol:#FEF0E6;--od:#C4561A;
+  --red:#E24B4A;--rl:#FCEBEB;
+  --amber:#EF9F27;--al:#FAEEDA;
   --p:#6B30A8;--pl:#F3EBFA;
   --bg:#fff;--bg2:#f6f6f4;--bd:#e5e5e3;--bd2:#d4d4d0;
   --t:#1a1a18;--t2:#5f5e5a;--t3:#8c8b86;
@@ -33,8 +34,8 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 .conn-pill:hover{border-color:var(--g);background:var(--gl);}
 .cdot{width:6px;height:6px;border-radius:50%;background:#ccc;flex-shrink:0;}
 .cdot.on{background:var(--g);box-shadow:0 0 5px rgba(29,158,117,.4);}
-.cdot.err{background:var(--r);}
-.cdot.ld{background:var(--a);animation:pd 1s infinite;}
+.cdot.err{background:var(--red);}
+.cdot.ld{background:var(--amber);animation:pd 1s infinite;}
 @keyframes pd{0%,100%{opacity:1}50%{opacity:.3}}
 
 /* TABS */
@@ -81,7 +82,7 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 .cal-dow-hdr .dow-label{font-size:11px;color:var(--t3);font-weight:500;}
 .cal-dow-hdr .dow-date{font-size:18px;font-weight:600;color:var(--t);line-height:1.2;}
 .cal-dow-hdr.today-col .dow-date{color:var(--gd);}
-.cal-dow-hdr.sun-col .dow-date{color:var(--r);}
+.cal-dow-hdr.sun-col .dow-date{color:var(--red);}
 .cal-dow-hdr.sat-col .dow-date{color:var(--b);}
 .cal-day-col{border-right:1px solid var(--bd);min-height:420px;padding:6px 4px;background:var(--bg);vertical-align:top;}
 .cal-day-col.today-col{background:var(--gl);}
@@ -89,9 +90,9 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 .cal-task{font-size:11px;padding:3px 6px;border-radius:5px;margin-bottom:3px;cursor:pointer;line-height:1.4;word-break:keep-all;}
 .cal-task:hover{opacity:.85;}
 .cal-task.mine{background:var(--gl);color:var(--gd);border-left:3px solid var(--g);}
-.cal-task.del{background:var(--bl);color:#185FA5;border-left:3px solid var(--b);}
+.cal-task.del{background:var(--ol);color:var(--od);border-left:3px solid var(--o);}
 .cal-task.done{background:#f1efe8;color:var(--t3);text-decoration:line-through;border-left:3px solid #ccc;}
-.cal-task.ov{background:var(--rl);color:#A32D2D;border-left:3px solid var(--r);}
+.cal-task.ov{background:var(--rl);color:#A32D2D;border-left:3px solid var(--red);}
 .cal-task.appr{background:var(--pl);color:var(--p);border-left:3px solid var(--p);}
 .cal-empty{font-size:11px;color:var(--t3);text-align:center;padding-top:20px;}
 .cal-week-stat{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px;}
@@ -103,11 +104,11 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 /* TASK CARDS */
 .tlist{display:flex;flex-direction:column;gap:7px;}
 .tc{background:var(--bg);border:1px solid var(--bd);border-radius:var(--rr);padding:12px 14px;}
-.tc.mine{border-left:3px solid var(--g);}
-.tc.delegated{border-left:3px solid var(--b);}
-.tc.urgent{border-left:3px solid var(--r);}
+.tc.mine{border-left:3px solid var(--g);}  /* 파랑 */
+.tc.delegated{border-left:3px solid var(--o);}
+.tc.urgent{border-left:3px solid var(--red);}
 .tc.child-c{margin-left:20px;background:var(--bg2);}
-.tc.child-c.mine{border-left:3px solid #5DCAA5;}
+.tc.child-c.mine{border-left:3px solid #6BAEE8;}
 .tc.blocked{opacity:.5;}
 .tt{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;}
 .tn{font-size:13px;font-weight:500;color:var(--t);flex:1;line-height:1.4;}
@@ -116,7 +117,7 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 .b{font-size:10.5px;padding:2px 7px;border-radius:9px;white-space:nowrap;}
 .b-cat{background:var(--gl);color:var(--gd);}
 .b-mine{background:var(--gl);color:var(--gd);}
-.b-del{background:var(--bl);color:#185FA5;}
+.b-del{background:var(--ol);color:var(--od);}
 .b-seq{background:var(--bl);color:#185FA5;}
 .b-par{background:#EAF3DE;color:#3B6D11;}
 .b-gate{background:var(--pl);color:var(--p);}
@@ -163,7 +164,7 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 .gate-node{background:var(--pl);color:var(--p);border:1px solid #D5AFF5;}
 .done-node{background:#f1efe8;color:var(--t3);border:1px solid #ccc;text-decoration:line-through;opacity:.7;}
 .blk-node{opacity:.4;}
-.start-node{background:var(--gl);color:var(--gd);border:1px solid #5DCAA5;}
+.start-node{background:var(--gl);color:var(--gd);border:1px solid #6BAEE8;}
 .flow-arrow{color:var(--t3);font-size:14px;padding:0 4px;margin-top:14px;}
 .flow-par-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:6px;}
 .flow-empty{font-size:12px;color:var(--t3);padding:8px 0;}
@@ -181,7 +182,7 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 .ai-fields input{font-size:12.5px;border:1px solid var(--bd2);border-radius:var(--rs);padding:6px 8px;background:var(--bg);color:var(--t);outline:none;}
 .ai-fields select{font-size:12px;border:1px solid var(--bd2);border-radius:var(--rs);padding:6px 7px;background:var(--bg);color:var(--t);outline:none;}
 .rm-btn{background:none;border:none;cursor:pointer;color:var(--t3);font-size:16px;padding:0 3px;}
-.add-ai-btn{padding:5px 12px;font-size:12px;border:1px solid #5DCAA5;border-radius:var(--rs);cursor:pointer;background:transparent;color:var(--gd);display:flex;align-items:center;gap:4px;margin-bottom:10px;}
+.add-ai-btn{padding:5px 12px;font-size:12px;border:1px solid #6BAEE8;border-radius:var(--rs);cursor:pointer;background:transparent;color:var(--gd);display:flex;align-items:center;gap:4px;margin-bottom:10px;}
 .save-mtg-btn{padding:9px 20px;background:var(--g);color:#fff;border:none;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;width:100%;}
 
 /* ADD FORM */
@@ -215,7 +216,7 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 .bub{max-width:80%;padding:9px 13px;border-radius:11px;font-size:13px;line-height:1.65;color:var(--t);}
 .bub-b{background:var(--bg2);border:1px solid var(--bd);border-bottom-left-radius:3px;}
 .bub-u{background:var(--g);color:#fff;border-bottom-right-radius:3px;}
-.bub-a{background:var(--gl);border-color:#5DCAA5;}
+.bub-a{background:var(--gl);border-color:#6BAEE8;}
 .bub-w{background:#FEF3E2;border-color:#F5D8A0;}
 .bub-s{background:var(--bl);border-color:#85B7EB;}
 .tr{background:var(--bg);border:1px solid var(--bd2);border-radius:var(--rs);padding:8px 11px;margin-top:6px;font-size:12px;}
@@ -325,7 +326,7 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
   <div class="hdr-l">
     <div class="logo"><i class="ti ti-checklist"></i></div>
     <div>
-      <div class="app-name">동구밭 과제 관리 에이전트</div>
+      <div class="app-name">태스크 관리</div>
       <div class="app-ver">Task Agent v2.1 — 확인·승인·연결 체인 지원</div>
     </div>
   </div>
@@ -766,7 +767,7 @@ function renderStats() {
     '<div class="sc"><div class="sc-l">메인 과제</div><div class="sc-n">' + act.filter(function(t) { return !t.parentId; }).length + '</div></div>' +
     '<div class="sc"><div class="sc-l">후속 업무</div><div class="sc-n" style="color:var(--g)">' + act.filter(function(t) { return t.parentId; }).length + '</div></div>' +
     '<div class="sc"><div class="sc-l">🔐 승인 대기</div><div class="sc-n" style="color:var(--p)">' + appr + '</div></div>' +
-    '<div class="sc"><div class="sc-l">마감 임박 3일</div><div class="sc-n" style="color:var(--r)">' + urg + '</div></div>';
+    '<div class="sc"><div class="sc-l">마감 임박 3일</div><div class="sc-n" style="color:var(--red)">' + urg + '</div></div>';
 }
 // 주단위 범위 계산
 function getWeekRange(offset) {
@@ -924,7 +925,7 @@ function renderCard(t, isChild) {
     '<button class="act-btn" onclick="openEdit(' + t.id + ')" style="color:var(--b)"><i class="ti ti-pencil"></i> 수정</button>' +
     (!isChild ? '<button class="act-btn blue" onclick="openChild(' + t.id + ')"><i class="ti ti-git-branch"></i> 후속 추가</button>' : '') +
     (!t.done ? '<button class="act-btn green" onclick="completeTask(' + t.id + ')"><i class="ti ti-check"></i> 완료</button>' : '') +
-    '<button class="act-btn" onclick="deleteTask(' + t.id + ')" style="color:var(--r)"><i class="ti ti-trash"></i> 삭제</button>' +
+    '<button class="act-btn" onclick="deleteTask(' + t.id + ')" style="color:var(--red)"><i class="ti ti-trash"></i> 삭제</button>' +
     '</div></div>' +
     gateStrip + progHtml + expBtn + childrenHtml + '</div>';
 }
@@ -1242,7 +1243,7 @@ function renderArchive() {
     '<div class="as">' +
     '<div class="as-c"><div class="lbl">전체</div><div class="val">' + mt.length + '</div></div>' +
     '<div class="as-c"><div class="lbl">완료</div><div class="val" style="color:var(--gd)">' + done.length + '</div></div>' +
-    '<div class="as-c"><div class="lbl">미완료</div><div class="val" style="color:var(--r)">' + active.length + '</div></div>' +
+    '<div class="as-c"><div class="lbl">미완료</div><div class="val" style="color:var(--red)">' + active.length + '</div></div>' +
     '<div class="as-c"><div class="lbl">완료율</div><div class="val" style="color:var(--b)">' + rate + '%</div></div></div>' +
     '<div class="cr"><div class="rw"><svg width="58" height="58" viewBox="0 0 64 64">' +
     '<circle cx="32" cy="32" r="26" fill="none" stroke="var(--bd)" stroke-width="7"/>' +
@@ -1252,7 +1253,7 @@ function renderArchive() {
     '<div style="font-size:12px;color:var(--t3);line-height:1.6;">전체 ' + mt.length + '건 중 ' + done.length + '건 완료<br>메인 ' + mt.filter(function(t) { return !t.parentId; }).length + '건 · 후속 ' + mt.filter(function(t) { return t.parentId; }).length + '건</div></div></div>' +
     '<div style="margin-bottom:1rem;"><div class="sec-title" style="margin-bottom:7px;"><i class="ti ti-chart-bar"></i> 카테고리별</div>' + bars + '</div>' +
     '<div style="margin-bottom:1rem;"><div class="mgh"><span class="dot2" style="background:var(--g);"></span>완료 (' + done.length + ')</div>' + dH + '</div>' +
-    '<div><div class="mgh"><span class="dot2" style="background:var(--r);"></span>미완료 (' + active.length + ')</div>' + aH + '</div>';
+    '<div><div class="mgh"><span class="dot2" style="background:var(--red);"></span>미완료 (' + active.length + ')</div>' + aH + '</div>';
 }
 
 // ── AI chat ──
@@ -1508,7 +1509,7 @@ function renderCalendar() {
     '<div class="cal-stat-c"><div class="cal-stat-n">' + weekTasks.length + '</div><div class="cal-stat-l">이번 주 전체</div></div>' +
     '<div class="cal-stat-c"><div class="cal-stat-n" style="color:var(--g)">' + wDone + '</div><div class="cal-stat-l">완료</div></div>' +
     '<div class="cal-stat-c"><div class="cal-stat-n" style="color:var(--b)">' + wAct + '</div><div class="cal-stat-l">진행 중</div></div>' +
-    '<div class="cal-stat-c"><div class="cal-stat-n" style="color:var(--r)">' + wUrg + '</div><div class="cal-stat-l">오늘 마감/지연</div></div>' +
+    '<div class="cal-stat-c"><div class="cal-stat-n" style="color:var(--red)">' + wUrg + '</div><div class="cal-stat-l">오늘 마감/지연</div></div>' +
     '</div>';
   // 헤더 행
   var gridHtml = '<div class="cal-week-grid">' +
@@ -1546,8 +1547,8 @@ function renderRiskPanel() {
     return;
   }
   var lines = [];
-  if (ov.length) lines.push('🚨 <strong>마감 초과 ' + ov.length + '건</strong><br>' + ov.map(function(t) { return '&nbsp;&nbsp;• ' + t.name + ' <span style="color:var(--r);">(' + dStr(t.due) + ')</span>'; }).join('<br>'));
-  if (ug.length) lines.push('🔴 <strong>D-2 이내 ' + ug.length + '건</strong><br>' + ug.map(function(t) { return '&nbsp;&nbsp;• ' + t.name + ' <span style="color:var(--r);">(' + dStr(t.due) + ')</span>'; }).join('<br>'));
+  if (ov.length) lines.push('🚨 <strong>마감 초과 ' + ov.length + '건</strong><br>' + ov.map(function(t) { return '&nbsp;&nbsp;• ' + t.name + ' <span style="color:var(--red);">(' + dStr(t.due) + ')</span>'; }).join('<br>'));
+  if (ug.length) lines.push('🔴 <strong>D-2 이내 ' + ug.length + '건</strong><br>' + ug.map(function(t) { return '&nbsp;&nbsp;• ' + t.name + ' <span style="color:var(--red);">(' + dStr(t.due) + ')</span>'; }).join('<br>'));
   if (ap.length) lines.push('🔐 <strong>승인 대기 ' + ap.length + '건</strong><br>' + ap.map(function(t) { return '&nbsp;&nbsp;• ' + t.name; }).join('<br>'));
   el.innerHTML = lines.join('<br><br>');
 }
@@ -1557,7 +1558,7 @@ function renderPriorityPanel() {
   var act = tasks.filter(function(t) { return !t.done && !t.parentId && !isBlocked(t); });
   act.sort(function(a, b) { var s = { high: 0, mid: 1, low: 2 }; return (s[a.imp]+s[a.urg])-(s[b.imp]+s[b.urg])||dd(a.due)-dd(b.due); });
   if (!act.length) { el.innerHTML = '<span style="color:var(--t3);">진행 중인 과제가 없어요</span>'; return; }
-  var colors = ['var(--r)', 'var(--r)', 'var(--a)', 'var(--a)', 'var(--g)'];
+  var colors = ['var(--red)', 'var(--red)', 'var(--amber)', 'var(--amber)', 'var(--g)'];
   el.innerHTML = act.slice(0,5).map(function(t, i) {
     return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd);">' +
       '<span style="width:20px;height:20px;border-radius:50%;background:' + colors[i] + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">' + (i+1) + '</span>' +
