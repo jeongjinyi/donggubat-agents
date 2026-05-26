@@ -463,11 +463,19 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
   <!-- CALENDAR -->
   <div class="sec" id="sec-cal">
     <div class="sec-hdr">
-      <div class="mn" style="margin-bottom:0;">
-        <button onclick="changeCalWeek(-1)"><i class="ti ti-chevron-left"></i></button>
-        <div class="mn-title" id="cal-title" style="font-size:14px;min-width:160px;text-align:center;"></div>
-        <button onclick="changeCalWeek(1)"><i class="ti ti-chevron-right"></i></button>
-        <button class="dr-btn" onclick="goCalToday()">오늘</button>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div class="mn" style="margin-bottom:0;">
+          <button onclick="changeCalWeek(-1)"><i class="ti ti-chevron-left"></i></button>
+          <div class="mn-title" id="cal-title" style="font-size:14px;min-width:160px;text-align:center;"></div>
+          <button onclick="changeCalWeek(1)"><i class="ti ti-chevron-right"></i></button>
+          <button class="dr-btn" onclick="goCalToday()">오늘</button>
+        </div>
+        <div class="dropdown-wrap">
+          <i class="ti ti-users" style="color:var(--t3);font-size:13px;"></i>
+          <select class="filter-select" id="cal-team-select" onchange="setCalTeamFilter(this.value)">
+            <option value="전체">전체 팀</option>
+          </select>
+        </div>
       </div>
       <button class="sec-add-btn" onclick="openAddModal()"><i class="ti ti-plus"></i> 새 과제 추가</button>
     </div>
@@ -643,6 +651,7 @@ var modalPid = null;
 var filterCat = '전체';
 var filterTeam = '전체';
 var filterWeek = '전체';
+var calFilterTeam = '전체';
 var archYear = new Date().getFullYear(), archMonth = new Date().getMonth() + 1;
 var aiHist = [];
 var actionItems = [];
@@ -1489,6 +1498,25 @@ function goCalToday() {
   calBaseDate = TODAY;
   renderCalendar();
 }
+function setCalTeamFilter(tm) {
+  calFilterTeam = tm;
+  renderCalendar();
+}
+function renderCalTeamFilter() {
+  var sel = document.getElementById('cal-team-select');
+  if (!sel) return;
+  var teams = ['전체'];
+  tasks.forEach(function(t) {
+    var team = getTaskTeam(t);
+    if (team && teams.indexOf(team) === -1) teams.push(team);
+  });
+  var cur = sel.value || '전체';
+  sel.innerHTML = '<option value="전체">전체 팀</option>' +
+    teams.filter(function(t) { return t !== '전체'; }).map(function(tm) {
+      return '<option value="' + tm + '">' + tm + '</option>';
+    }).join('');
+  sel.value = teams.indexOf(cur) > -1 ? cur : '전체';
+}
 function renderCalendar() {
   var weekStart = getWeekStart(calBaseDate);
   var ws = new Date(weekStart);
@@ -1509,21 +1537,27 @@ function renderCalendar() {
     days.push({ str: fmt(d), date: d.getDate(), dow: d.getDay(), isToday: fmt(d) === TODAY });
   }
   var dowLabels = ['월','화','수','목','금','토','일'];
-  // 과제 맵
+  // 팀 필터 드롭다운 업데이트
+  renderCalTeamFilter();
+  // 과제 맵 (팀 필터 적용)
+  var filteredTasks = calFilterTeam === '전체' ? tasks : tasks.filter(function(t) {
+    return getTaskTeam(t) === calFilterTeam;
+  });
   var taskMap = {};
-  tasks.forEach(function(t) {
+  filteredTasks.forEach(function(t) {
     if (!t.due) return;
     if (!taskMap[t.due]) taskMap[t.due] = [];
     taskMap[t.due].push(t);
   });
-  // 주 통계
-  var weekTasks = tasks.filter(function(t) { return t.due >= weekStart && t.due <= weStr; });
+  // 주 통계 (필터 적용)
+  var weekTasks = filteredTasks.filter(function(t) { return t.due >= weekStart && t.due <= weStr; });
   var wDone = weekTasks.filter(function(t) { return t.done; }).length;
   var wAct  = weekTasks.filter(function(t) { return !t.done; }).length;
   var wUrg  = weekTasks.filter(function(t) { return !t.done && dd(t.due) <= 0; }).length;
+  var teamLabel = calFilterTeam !== '전체' ? ' — ' + calFilterTeam : '';
   var statsHtml =
     '<div class="cal-week-stat">' +
-    '<div class="cal-stat-c"><div class="cal-stat-n">' + weekTasks.length + '</div><div class="cal-stat-l">이번 주 전체</div></div>' +
+    '<div class="cal-stat-c"><div class="cal-stat-n">' + weekTasks.length + '</div><div class="cal-stat-l">이번 주 전체' + teamLabel + '</div></div>' +
     '<div class="cal-stat-c"><div class="cal-stat-n" style="color:var(--g)">' + wDone + '</div><div class="cal-stat-l">완료</div></div>' +
     '<div class="cal-stat-c"><div class="cal-stat-n" style="color:var(--b)">' + wAct + '</div><div class="cal-stat-l">진행 중</div></div>' +
     '<div class="cal-stat-c"><div class="cal-stat-n" style="color:var(--red)">' + wUrg + '</div><div class="cal-stat-l">오늘 마감/지연</div></div>' +
