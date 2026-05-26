@@ -2,9 +2,10 @@ name: 과제 마감 알림 (매일 09:00 KST)
 
 on:
   schedule:
-    # UTC 00:00 = KST 09:00
-    - cron: "0 0 * * 1-5"    # 평일(월~금)
-  workflow_dispatch:           # GitHub Actions UI에서 수동 실행 가능
+    # GitHub Actions는 최대 1시간 지연이 발생할 수 있어요
+    # KST 09:00 목표 → UTC 23:30 (전날) 으로 설정해서 여유를 둬요
+    - cron: "30 23 * * 0-4"    # 평일(월~금) UTC 23:30 = KST 08:30~09:30 사이 도착
+  workflow_dispatch:             # GitHub Actions UI에서 수동 실행 가능
 
 jobs:
   task-alert:
