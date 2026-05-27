@@ -99,6 +99,19 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 .cal-stat-c{background:var(--bg);border:1px solid var(--bd);border-radius:var(--rs);padding:8px 12px;text-align:center;}
 .cal-stat-n{font-size:18px;font-weight:600;color:var(--t);}
 .cal-stat-l{font-size:10.5px;color:var(--t3);margin-top:2px;}
+/* Recurring */
+.rec-card{background:var(--bg);border:1px solid var(--bd);border-radius:var(--rr);padding:12px 15px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.rec-card:hover{border-color:var(--bd2);}
+.rec-info{flex:1;}
+.rec-name{font-size:13px;font-weight:500;color:var(--t);margin-bottom:4px;}
+.rec-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.rec-day-badge{font-size:11px;padding:2px 8px;border-radius:8px;background:var(--gl);color:var(--gd);font-weight:500;}
+.rec-btns{display:flex;gap:6px;}
+.rec-gen-btn{padding:5px 12px;font-size:12px;background:var(--g);color:#fff;border:none;border-radius:var(--rs);cursor:pointer;display:flex;align-items:center;gap:4px;}
+.rec-gen-btn:hover{background:var(--gd);}
+.rec-del-btn{padding:5px 10px;font-size:12px;background:transparent;color:var(--red);border:1px solid var(--rl);border-radius:var(--rs);cursor:pointer;}
+.rec-del-btn:hover{background:var(--rl);}
+.rec-empty{text-align:center;padding:2.5rem;color:var(--t3);font-size:13px;}
 .fr-label{font-size:11px;color:var(--t3);display:flex;align-items:center;gap:4px;padding:2px 4px;white-space:nowrap;}
 
 /* TASK CARDS */
@@ -342,10 +355,8 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 <div class="tabs">
   <div class="tab active" onclick="showTab('dash')"><i class="ti ti-layout-dashboard"></i> 대시보드</div>
   <div class="tab" onclick="showTab('cal')"><i class="ti ti-calendar"></i> 캘린더</div>
-  <div class="tab" onclick="showTab('flow')"><i class="ti ti-git-branch"></i> 흐름도</div>
-  <div class="tab" onclick="showTab('meeting')"><i class="ti ti-speakerphone"></i> 회의 액션</div>
   <div class="tab" onclick="showTab('matrix')"><i class="ti ti-chart-scatter"></i> 우선순위</div>
-  <div class="tab" onclick="showTab('add')"><i class="ti ti-plus"></i> 과제 추가</div>
+  <div class="tab" onclick="showTab('recurring')"><i class="ti ti-repeat"></i> 반복 과제</div>
   <div class="tab" onclick="showTab('archive')"><i class="ti ti-calendar-stats"></i> 월별 아카이브</div>
 </div>
 
@@ -388,7 +399,7 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
   </div>
 
   <!-- FLOW -->
-  <div class="sec" id="sec-flow">
+  <div class="sec" id="sec-flow" style="display:none!important;">
     <div class="sec-hdr">
       <div class="sec-title"><i class="ti ti-git-branch"></i> 후속 업무 흐름도</div>
       <button class="sec-add-btn" onclick="openAddModal()"><i class="ti ti-plus"></i> 새 과제 추가</button>
@@ -397,7 +408,7 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
   </div>
 
   <!-- MEETING -->
-  <div class="sec" id="sec-meeting">
+  <div class="sec" id="sec-meeting" style="display:none!important;">
     <div class="sec-title"><i class="ti ti-speakerphone"></i> 회의 결과 → 액션 아이템 일괄 등록</div>
     <div class="mform">
       <div class="fg-row">
@@ -433,7 +444,7 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
   </div>
 
   <!-- ADD -->
-  <div class="sec" id="sec-add">
+  <div class="sec" id="sec-add" style="display:none!important;">
     <div class="sec-title"><i class="ti ti-clipboard-plus"></i> 새 과제 등록</div>
     <div class="add-form">
       <div class="fg-grid">
@@ -484,6 +495,63 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 
   <!-- AI (숨김) -->
   <div class="sec" id="sec-ai" style="display:none!important;"></div>
+
+  <!-- RECURRING -->
+  <div class="sec" id="sec-recurring">
+    <div class="sec-hdr">
+      <div class="sec-title"><i class="ti ti-repeat"></i> 반복 과제 관리</div>
+      <button class="sec-add-btn" onclick="openRecurringModal()"><i class="ti ti-plus"></i> 반복 과제 추가</button>
+    </div>
+
+    <!-- 이번 달 생성 버튼 -->
+    <div style="background:var(--gl);border:1px solid #6BAEE8;border-radius:var(--rr);padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-size:13px;font-weight:500;color:var(--gd);">이번 달 반복 과제 생성</div>
+        <div style="font-size:12px;color:var(--t2);margin-top:2px;">등록된 반복 과제를 이번 달 마감일로 일괄 생성해요.</div>
+      </div>
+      <button onclick="generateMonthlyTasks()" style="padding:8px 18px;background:var(--g);color:#fff;border:none;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px;">
+        <i class="ti ti-wand"></i> 이번 달 과제 생성
+      </button>
+    </div>
+
+    <div id="recurring-list"></div>
+  </div>
+
+  <!-- RECURRING ADD MODAL -->
+  <div class="mover" id="recurring-modal">
+    <div class="atmod">
+      <div class="atmod-head">
+        <div class="atmod-title"><i class="ti ti-repeat" style="margin-right:5px;color:var(--g);"></i>반복 과제 추가</div>
+        <button class="atmod-close" onclick="closeRecurringModal()"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="atmod-body">
+        <div class="fg atmod-full"><label>과제명 *</label><input type="text" id="rec-name" placeholder="예: 월별 매출 리포트 작성"/></div>
+        <div class="fg"><label>카테고리</label>
+          <select id="rec-cat" onchange="handleCatChange(this)"><option>회의</option><option>신제품</option><option>마케팅</option><option>영업이익</option><option>매출</option><option>팀 운영</option><option>기타</option><option value="__new__">+ 새 카테고리 추가...</option></select>
+        </div>
+        <div class="fg"><label>담당 구분</label>
+          <div class="owner-tog"><button class="ot-btn on" id="rec-m" onclick="setRecOwner('mine')"><i class="ti ti-user"></i> 내 과제</button><button class="ot-btn" id="rec-d" onclick="setRecOwner('del')"><i class="ti ti-users"></i> 위임</button></div>
+        </div>
+        <div class="fg"><label>중요도</label><select id="rec-imp"><option value="high">🔴 높음</option><option value="mid" selected>🟡 보통</option><option value="low">🟢 낮음</option></select></div>
+        <div class="fg"><label>시급도</label><select id="rec-urg"><option value="high">🔴 긴급</option><option value="mid" selected>🟡 보통</option><option value="low">🟢 여유</option></select></div>
+        <div class="fg"><label>매월 마감일 (일)</label>
+          <select id="rec-day">
+            <option value="1">매월 1일</option><option value="5">매월 5일</option><option value="10">매월 10일</option>
+            <option value="15">매월 15일</option><option value="20">매월 20일</option><option value="25">매월 25일</option>
+            <option value="last">매월 말일</option><option value="custom">직접 입력</option>
+          </select>
+        </div>
+        <div class="fg" id="rec-day-custom-wrap" style="display:none;"><label>마감 일자</label><input type="number" id="rec-day-custom" min="1" max="31" placeholder="1~31" style="font-size:13px;padding:7px 10px;border:1px solid var(--bd2);border-radius:var(--rs);outline:none;font-family:var(--fn);"/></div>
+        <div class="fg"><label>담당자명</label><input type="text" id="rec-person" placeholder="예: 진이"/></div>
+        <div class="fg"><label>팀명</label><input type="text" id="rec-team" placeholder="예: 마케팅팀"/></div>
+        <div class="fg atmod-full"><label>메모</label><textarea id="rec-memo" placeholder="추가 내용 (선택사항)" style="width:100%;font-size:13px;padding:7px 10px;border:1px solid var(--bd2);border-radius:var(--rs);outline:none;font-family:var(--fn);resize:vertical;min-height:52px;"></textarea></div>
+      </div>
+      <div class="atmod-foot">
+        <button class="btn-cancel" onclick="closeRecurringModal()">취소</button>
+        <button class="btn-ok" onclick="saveRecurring()"><i class="ti ti-check"></i> 저장</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ARCHIVE -->
   <div class="sec" id="sec-archive">
@@ -1471,13 +1539,14 @@ function showTab(t) {
   document.querySelectorAll('.sec').forEach(function(s) { s.classList.remove('active'); });
   document.querySelectorAll('.tab').forEach(function(s) { s.classList.remove('active'); });
   document.getElementById('sec-' + t).classList.add('active');
-  var map = { dash: 0, cal: 1, flow: 2, meeting: 3, matrix: 4, add: 5, archive: 6 };
+  var map = { dash: 0, cal: 1, matrix: 2, recurring: 3, archive: 4 };
   if (map[t] !== undefined) document.querySelectorAll('.tab')[map[t]].classList.add('active');
   if (t === 'add') popSelects();
   if (t === 'meeting') { popSelects(); if (!actionItems.length) initAI(); }
   if (t === 'archive') renderArchive();
   if (t === 'flow') renderFlow();
   if (t === 'cal') renderCalendar();
+  if (t === 'recurring') renderRecurring();
 }
 
 // ── calendar (주간 뷰) ──
@@ -1656,6 +1725,205 @@ function copyPrompt(question) {
     window.open('https://claude.ai', '_blank');
   }).catch(function() { alert('복사 실패.'); });
 }
+// ── recurring tasks ──
+var recurringTasks = JSON.parse(localStorage.getItem('dg_recurring') || '[]');
+var recOwnerMode = 'mine';
+
+function saveRecurring_store() { localStorage.setItem('dg_recurring', JSON.stringify(recurringTasks)); }
+
+function setRecOwner(m) {
+  recOwnerMode = m;
+  document.getElementById('rec-m').className = 'ot-btn' + (m === 'mine' ? ' on' : '');
+  document.getElementById('rec-d').className = 'ot-btn' + (m === 'del' ? ' on' : '');
+}
+
+function openRecurringModal() {
+  document.getElementById('rec-name').value = '';
+  document.getElementById('rec-person').value = '';
+  document.getElementById('rec-team').value = '';
+  document.getElementById('rec-memo').value = '';
+  document.getElementById('rec-imp').value = 'mid';
+  document.getElementById('rec-urg').value = 'mid';
+  document.getElementById('rec-day').value = '1';
+  document.getElementById('rec-day-custom-wrap').style.display = 'none';
+  setRecOwner('mine');
+  document.getElementById('recurring-modal').classList.add('open');
+  setTimeout(function() { document.getElementById('rec-name').focus(); }, 100);
+}
+function closeRecurringModal() { document.getElementById('recurring-modal').classList.remove('open'); }
+
+// rec-day select 변경 시 직접 입력 표시
+document.addEventListener('DOMContentLoaded', function() {
+  var recDaySel = document.getElementById('rec-day');
+  if (recDaySel) {
+    recDaySel.addEventListener('change', function() {
+      document.getElementById('rec-day-custom-wrap').style.display = this.value === 'custom' ? 'flex' : 'none';
+    });
+  }
+});
+
+function saveRecurring() {
+  var name = document.getElementById('rec-name').value.trim();
+  if (!name) { alert('과제명을 입력해주세요.'); return; }
+  var dayVal = document.getElementById('rec-day').value;
+  if (dayVal === 'custom') {
+    dayVal = document.getElementById('rec-day-custom').value;
+    if (!dayVal || dayVal < 1 || dayVal > 31) { alert('1~31 사이의 날짜를 입력해주세요.'); return; }
+  }
+  var rec = {
+    id: 'rec-' + Date.now(),
+    name: name,
+    cat: document.getElementById('rec-cat').value,
+    owner: recOwnerMode,
+    person: document.getElementById('rec-person').value.trim() || '진이',
+    team: document.getElementById('rec-team').value.trim(),
+    imp: document.getElementById('rec-imp').value,
+    urg: document.getElementById('rec-urg').value,
+    day: dayVal, // 숫자 or 'last'
+    memo: document.getElementById('rec-memo').value.trim(),
+    createdAt: TODAY
+  };
+  recurringTasks.push(rec);
+  saveRecurring_store();
+  closeRecurringModal();
+  renderRecurring();
+}
+
+function deleteRecurring(id) {
+  var rec = recurringTasks.find(function(r) { return r.id === id; });
+  if (!rec) return;
+  if (!confirm('"' + rec.name + '" 반복 과제를 삭제할까요?')) return;
+  recurringTasks = recurringTasks.filter(function(r) { return r.id !== id; });
+  saveRecurring_store();
+  renderRecurring();
+}
+
+function getDayLabel(day) {
+  if (day === 'last') return '매월 말일';
+  return '매월 ' + day + '일';
+}
+
+function getMonthlyDue(day) {
+  var now = new Date(TODAY);
+  var y = now.getFullYear(), m = now.getMonth() + 1;
+  if (day === 'last') {
+    return fmt(new Date(y, m, 0)); // 말일
+  }
+  var d = parseInt(day);
+  // 해당 월에 없는 날짜면 말일로
+  var lastDay = new Date(y, m, 0).getDate();
+  d = Math.min(d, lastDay);
+  return y + '-' + String(m).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+}
+
+function generateMonthlyTasks() {
+  if (!recurringTasks.length) { alert('등록된 반복 과제가 없어요.'); return; }
+  var now = new Date(TODAY);
+  var y = now.getFullYear(), m = now.getMonth() + 1;
+  var monthLabel = y + '년 ' + m + '월';
+  var created = 0, skipped = 0;
+  recurringTasks.forEach(function(rec) {
+    var due = getMonthlyDue(rec.day);
+    // 같은 달에 이미 같은 이름 과제가 있으면 스킵
+    var exists = tasks.some(function(t) {
+      return t.name === rec.name && t.due && t.due.startsWith(y + '-' + String(m).padStart(2,'0'));
+    });
+    if (exists) { skipped++; return; }
+    var t = {
+      id: nextId++, name: rec.name, cat: rec.cat, owner: rec.owner,
+      person: rec.person, team: rec.team,
+      imp: rec.imp, urg: rec.urg, due: due,
+      done: false, doneAt: null, parentId: null, chainType: null, expanded: false,
+      memo: rec.memo || '', link: '', isRecurring: true
+    };
+    tasks.push(t);
+    created++;
+    // 구글 시트에도 저장
+    if (connected) {
+      apiAdd({
+        name: t.name, cat: t.cat,
+        owner: t.owner === 'mine' ? '내 과제' : '위임 과제',
+        person: t.person + (t.team ? ' / ' + t.team : ''),
+        imp: t.imp === 'high' ? '높음' : t.imp === 'low' ? '낮음' : '보통',
+        urg: t.urg === 'high' ? '긴급' : t.urg === 'low' ? '여유' : '보통',
+        due: t.due, status: '대기', memo: t.memo || ''
+      }).catch(function() {});
+    }
+  });
+  renderAll();
+  var msg = monthLabel + ' 반복 과제 생성 완료!\n\n✅ 생성: ' + created + '건';
+  if (skipped) msg += '\n⏭ 이미 존재해서 스킵: ' + skipped + '건';
+  alert(msg);
+}
+
+function generateSingleRecurring(id) {
+  var rec = recurringTasks.find(function(r) { return r.id === id; });
+  if (!rec) return;
+  var now = new Date(TODAY);
+  var y = now.getFullYear(), m = now.getMonth() + 1;
+  var due = getMonthlyDue(rec.day);
+  var exists = tasks.some(function(t) {
+    return t.name === rec.name && t.due && t.due.startsWith(y + '-' + String(m).padStart(2,'0'));
+  });
+  if (exists) { alert('"' + rec.name + '"은 이번 달에 이미 생성됐어요.'); return; }
+  var t = {
+    id: nextId++, name: rec.name, cat: rec.cat, owner: rec.owner,
+    person: rec.person, team: rec.team,
+    imp: rec.imp, urg: rec.urg, due: due,
+    done: false, doneAt: null, parentId: null, chainType: null, expanded: false,
+    memo: rec.memo || '', link: '', isRecurring: true
+  };
+  tasks.push(t);
+  if (connected) {
+    apiAdd({
+      name: t.name, cat: t.cat,
+      owner: t.owner === 'mine' ? '내 과제' : '위임 과제',
+      person: t.person + (t.team ? ' / ' + t.team : ''),
+      imp: t.imp === 'high' ? '높음' : t.imp === 'low' ? '낮음' : '보통',
+      urg: t.urg === 'high' ? '긴급' : t.urg === 'low' ? '여유' : '보통',
+      due: t.due, status: '대기', memo: t.memo || ''
+    }).catch(function() {});
+  }
+  renderAll();
+  alert('"' + rec.name + '" → ' + due + ' 마감으로 생성됐어요!');
+}
+
+function renderRecurring() {
+  var el = document.getElementById('recurring-list');
+  if (!el) return;
+  if (!recurringTasks.length) {
+    el.innerHTML = '<div class="rec-empty"><i class="ti ti-repeat" style="font-size:32px;opacity:.3;display:block;margin-bottom:10px;"></i>등록된 반복 과제가 없어요.<br>상단 버튼으로 추가해보세요!</div>';
+    return;
+  }
+  el.innerHTML = recurringTasks.map(function(rec) {
+    var impLabel = rec.imp === 'high' ? '🔴 높음' : rec.imp === 'low' ? '🟢 낮음' : '🟡 보통';
+    var teamStr = rec.team ? ' · ' + rec.team : '';
+    var personStr = rec.person !== '진이' || rec.team ? (rec.person + teamStr) : '';
+    var due = getMonthlyDue(rec.day);
+    var alreadyCreated = tasks.some(function(t) {
+      var now = new Date(TODAY);
+      var pref = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+      return t.name === rec.name && t.due && t.due.startsWith(pref);
+    });
+    return '<div class="rec-card">' +
+      '<div class="rec-info">' +
+        '<div class="rec-name">' + rec.name + '</div>' +
+        '<div class="rec-meta">' +
+          '<span class="b b-cat" style="font-size:10.5px;padding:2px 7px;border-radius:8px;">' + rec.cat + '</span>' +
+          '<span class="rec-day-badge"><i class="ti ti-calendar-repeat"></i> ' + getDayLabel(rec.day) + ' (이번달: ' + due + ')</span>' +
+          '<span class="b ' + (rec.owner === 'mine' ? 'b-mine' : 'b-del') + '" style="font-size:10.5px;padding:2px 7px;border-radius:8px;">' + (rec.owner === 'mine' ? '내 과제' : '위임') + '</span>' +
+          '<span style="font-size:10.5px;color:var(--t3);">' + impLabel + (personStr ? ' · ' + personStr : '') + '</span>' +
+          (alreadyCreated ? '<span style="font-size:10.5px;color:var(--gd);background:var(--gl);padding:2px 7px;border-radius:8px;">✅ 이번달 생성됨</span>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="rec-btns">' +
+        (!alreadyCreated ? '<button class="rec-gen-btn" onclick="generateSingleRecurring(\'' + rec.id + '\')"><i class="ti ti-wand"></i> 이번달 생성</button>' : '') +
+        '<button class="rec-del-btn" onclick="deleteRecurring(\'' + rec.id + '\')"><i class="ti ti-trash"></i></button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
 function renderAll() { renderStats(); renderFilters(); renderTasks(); renderMatrix(); renderFlow(); popSelects(); updateAllCatSelects(); }
 
 // ── add modal ──
