@@ -112,6 +112,19 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
 .rec-del-btn{padding:5px 10px;font-size:12px;background:transparent;color:var(--red);border:1px solid var(--rl);border-radius:var(--rs);cursor:pointer;}
 .rec-del-btn:hover{background:var(--rl);}
 .rec-empty{text-align:center;padding:2.5rem;color:var(--t3);font-size:13px;}
+/* Due date badges */
+.due-badge{font-size:10.5px;padding:2px 7px;border-radius:8px;font-weight:600;white-space:nowrap;}
+.due-over{background:var(--rl);color:#A32D2D;animation:pulse-badge 2s infinite;}
+.due-today{background:var(--red);color:#fff;animation:pulse-badge 1.5s infinite;}
+.due-soon{background:var(--al);color:#854F0B;}
+.due-warn{background:#FEF8EC;color:#A07010;}
+@keyframes pulse-badge{0%,100%{opacity:1}50%{opacity:.7}}
+/* Task detail */
+.task-detail{margin-top:8px;padding:9px 12px;background:var(--bg2);border-radius:var(--rs);border:1px solid var(--bd);}
+.detail-row{display:flex;align-items:flex-start;gap:7px;font-size:12.5px;color:var(--t2);line-height:1.6;margin-bottom:4px;}
+.detail-row:last-child{margin-bottom:0;}
+.detail-row i{font-size:13px;color:var(--t3);flex-shrink:0;margin-top:2px;}
+.done-card{border-left:3px solid #ccc;opacity:.8;}
 .fr-label{font-size:11px;color:var(--t3);display:flex;align-items:center;gap:4px;padding:2px 4px;white-space:nowrap;}
 
 /* TASK CARDS */
@@ -658,6 +671,10 @@ body{font-family:var(--fn);background:var(--bg2);min-height:100vh;display:flex;f
       <div class="fg"><label>마감일</label><input type="date" id="edit-due"/></div>
       <div class="fg"><label>담당자명</label><input type="text" id="edit-person" placeholder="예: 진이"/></div>
       <div class="fg"><label>팀명</label><input type="text" id="edit-team" placeholder="예: 마케팅팀"/></div>
+      <div class="fg atmod-full"><label>상위 과제 (변경 가능)</label><select id="edit-parent"><option value="">— 독립 과제 —</option></select></div>
+      <div class="fg atmod-full" id="edit-chain-wrap" style="display:none;"><label>후속 연결 방식</label>
+        <select id="edit-chain"><option value="sequential">🔗 순서 체인</option><option value="parallel">⚡ 병렬 진행</option><option value="approval">🔐 승인 게이트</option></select>
+      </div>
       <div class="fg atmod-full"><label>관련 문서 링크</label><input type="text" id="edit-link" placeholder="https://..."/></div>
       <div class="fg atmod-full"><label>메모</label><textarea id="edit-memo" style="width:100%;font-size:13px;padding:7px 10px;border:1px solid var(--bd2);border-radius:var(--rs);outline:none;font-family:var(--fn);resize:vertical;min-height:52px;"></textarea></div>
     </div>
@@ -810,12 +827,15 @@ function syncSheet() {
         // 완료·삭제 외 과제도 포함 (아카이브용)
         tasks = d.tasks.filter(function(t) { return t.status !== '삭제'; }).map(function(t) {
           var isDone = t.status === '완료';
+          // doneAt: Apps Script에서 'doneAt' 키로 오고, 완료 시 날짜가 있음
+          var doneAt = isDone ? (t.doneAt || t.due || TODAY) : null;
           return { id: t.id, name: t.name, cat: t.cat,
             owner: t.owner === '내 과제' ? 'mine' : 'del', person: t.person,
             team: t.team || '',
             imp: t.imp === '높음' ? 'high' : t.imp === '낮음' ? 'low' : 'mid',
             urg: t.urg === '긴급' ? 'high' : t.urg === '여유' ? 'low' : 'mid',
-            due: t.due, done: isDone, doneAt: isDone ? (t.완료일 || t.doneAt || TODAY) : null,
+            due: t.due, done: isDone, doneAt: doneAt,
+            link: t.link || '', memo: t.memo || '',
             parentId: t.parentId || null, chainType: t.chainType || null, expanded: false };
         });
         nextId = tasks.length ? Math.max.apply(null, tasks.map(function(t) { return parseInt(t.id) || 0; })) + 1 : 1;
@@ -969,42 +989,77 @@ function renderTasks() {
 }
 function renderCard(t, isChild) {
   var d = dd(t.due);
-  var dlc = d < 0 ? 'oc' : d <= 3 ? 'dc' : '';
+  var dlc = d < 0 ? 'oc' : d <= 2 ? 'dc' : '';
   var blocked = isBlocked(t);
-  // 완료된 상위 과제는 blocked 클래스 제거 (흐리게 안 보이도록)
+
+  // 배경/테두리 클래스
   var bc = isChild
     ? ('child-c ' + (t.owner === 'mine' ? 'mine' : 'delegated'))
     : (t.done ? 'done-card' : t.owner === 'mine' ? 'mine' : (t.imp === 'high' && t.urg === 'high' ? 'urgent' : 'delegated'));
+
   var children = tasks.filter(function(c) { return c.parentId === t.id && !c.done; });
   var prog = childProg(t.id);
   var il = impLabel(t.imp, t.urg);
+
+  // 마감 D-day 배지 — 메인 과제만, 완료/차단 아닐 때만
+  var dBadge = '';
+  var urgBg = '';
+  if (!t.done && !isChild) {
+    if (d < 0)        { dBadge = '<span class="due-badge due-over">D+' + Math.abs(d) + ' 지연</span>'; urgBg = 'border-left-color:var(--red);background:rgba(226,75,74,.05);'; }
+    else if (d === 0) { dBadge = '<span class="due-badge due-today">오늘 마감!</span>'; urgBg = 'border-left-color:var(--red);background:rgba(226,75,74,.05);'; }
+    else if (d <= 2)  { dBadge = '<span class="due-badge due-soon">D-' + d + '</span>'; urgBg = 'background:rgba(239,159,39,.06);'; }
+    else if (d <= 5)  { dBadge = '<span class="due-badge due-warn">D-' + d + '</span>'; }
+  }
+
+  // 취소선: 오직 완료된 과제만 (차단/대기 중인 과제는 취소선 없음)
+  var strikeClass = t.done ? ' strk' : '';
+
+  // 게이트 안내
   var gateStrip = (t.chainType === 'approval' && blocked) ? '<div class="gate-strip"><i class="ti ti-lock"></i> 상위 과제 완료/승인 후 활성화됩니다</div>' : '';
   var childrenHtml = (!isChild && t.expanded && children.length) ? '<div class="cw">' + children.map(function(c) { return renderCard(c, true); }).join('') + '</div>' : '';
   var expBtn = (!isChild && children.length) ? '<button class="exp-btn" onclick="toggleExp(' + t.id + ')"><i class="ti ti-chevron-' + (t.expanded ? 'up' : 'down') + '"></i> 후속 업무 ' + children.length + '건 ' + (t.expanded ? '접기' : '보기') + '</button>' : '';
   var progHtml = (!isChild && prog) ? '<div class="pw"><div class="pl-l"><span>후속 진행률</span><span>' + prog.done + '/' + prog.total + '</span></div><div class="pt"><div class="pf" style="width:' + prog.pct + '%"></div></div></div>' : '';
   var doneBadge = t.done ? '<span class="b" style="background:#f1efe8;color:var(--t3);">✅ 완료</span>' : '';
-  // 담당자 표시: person에 " / "가 있으면 이름만 추출
+
   var personName = t.person || '';
   if (personName.indexOf(' / ') > -1) personName = personName.split(' / ')[0].trim();
   var teamName = getTaskTeam(t);
-  return '<div class="tc ' + bc + (blocked && !t.done ? ' blocked' : '') + '">' +
-    '<div class="tt"><div class="tn' + (t.done ? ' strk' : blocked ? ' strk' : '') + '">' + (isChild ? '↳ ' : '') + t.name + '</div>' +
-    '<div class="bgs">' + doneBadge + '<span class="b b-cat">' + t.cat + '</span>' +
+
+  // 세부 정보 (메모/링크)
+  var detailId = 'detail-' + t.id;
+  var hasDetail = t.memo || t.link;
+  var detailHtml = hasDetail
+    ? '<div id="' + detailId + '" class="task-detail" style="display:none;">' +
+        (t.memo ? '<div class="detail-row"><i class="ti ti-notes"></i><span>' + t.memo.replace(/\n/g,'<br>') + '</span></div>' : '') +
+        (t.link ? '<div class="detail-row"><i class="ti ti-link"></i><a href="' + t.link + '" target="_blank" style="color:var(--g);">' + t.link + '</a></div>' : '') +
+        '</div>'
+    : '';
+
+  return '<div class="tc ' + bc + (blocked && !t.done ? ' blocked' : '') + '" style="' + urgBg + '">' +
+    '<div class="tt"><div class="tn' + strikeClass + '">' + (isChild ? '↳ ' : '') + t.name + '</div>' +
+    '<div class="bgs">' + doneBadge + dBadge + '<span class="b b-cat">' + t.cat + '</span>' +
     (t.chainType ? chainBadge(t.chainType) : '') +
     (blocked && !t.done ? '<span class="b b-blk">⏸ 대기</span>' : '') +
     '<span class="b ' + (t.owner === 'mine' ? 'b-mine' : 'b-del') + '">' + (t.owner === 'mine' ? '내 과제' : '위임·' + personName) + '</span>' +
     (!t.done ? '<span class="b ' + il[0] + '">' + il[1] + '</span>' : '') +
     '</div></div>' +
     '<div class="tm"><span class="mi ' + dlc + '"><i class="ti ti-calendar"></i>' + t.due + ' (' + dStr(t.due) + ')</span>' +
-    (t.link ? '<span class="mi"><i class="ti ti-link"></i><a href="' + t.link + '" style="color:inherit;">문서</a></span>' : '') +
     (teamName ? '<span class="mi"><i class="ti ti-building"></i>' + teamName + '</span>' : '') +
     '<div class="act-btns">' +
+    (hasDetail ? '<button class="act-btn" onclick="toggleDetail(\'' + detailId + '\', this)" style="color:var(--t3)"><i class="ti ti-info-circle"></i> 상세</button>' : '') +
     '<button class="act-btn" onclick="openEdit(' + t.id + ')" style="color:var(--b)"><i class="ti ti-pencil"></i> 수정</button>' +
     (!isChild ? '<button class="act-btn blue" onclick="openChild(' + t.id + ')"><i class="ti ti-git-branch"></i> 후속 추가</button>' : '') +
     (!t.done ? '<button class="act-btn green" onclick="completeTask(' + t.id + ')"><i class="ti ti-check"></i> 완료</button>' : '') +
     '<button class="act-btn" onclick="deleteTask(' + t.id + ')" style="color:var(--red)"><i class="ti ti-trash"></i> 삭제</button>' +
     '</div></div>' +
-    gateStrip + progHtml + expBtn + childrenHtml + '</div>';
+    detailHtml + gateStrip + progHtml + expBtn + childrenHtml + '</div>';
+}
+function toggleDetail(id, btn) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : 'block';
+  btn.style.color = isOpen ? 'var(--t3)' : 'var(--g)';
 }
 function toggleExp(id) { var t = tasks.find(function(x) { return x.id === id; }); if (t) t.expanded = !t.expanded; renderTasks(); }
 function completeTask(id) {
@@ -1081,6 +1136,31 @@ function openEdit(id) {
   document.getElementById('edit-person').value = person;
   document.getElementById('edit-team').value = team;
   setEditOwner(t.owner);
+  // 상위 과제 select 채우기 (본인 제외, 본인의 후속들도 제외)
+  var editParentSel = document.getElementById('edit-parent');
+  editParentSel.innerHTML = '<option value="">— 독립 과제 —</option>';
+  tasks.filter(function(x) {
+    return !x.done && x.id !== t.id && x.parentId !== t.id; // 자기 자신, 자신의 후속 제외
+  }).filter(function(x) { return !x.parentId; }) // 메인 과제만 상위로 선택 가능
+  .forEach(function(x) {
+    var o = document.createElement('option');
+    o.value = x.id;
+    o.textContent = x.name.length > 30 ? x.name.slice(0,30) + '…' : x.name;
+    if (String(x.id) === String(t.parentId)) o.selected = true;
+    editParentSel.appendChild(o);
+  });
+  // 연결 방식
+  var chainWrap = document.getElementById('edit-chain-wrap');
+  var editChain = document.getElementById('edit-chain');
+  if (t.parentId) {
+    chainWrap.style.display = 'flex';
+    if (t.chainType) editChain.value = t.chainType;
+  } else {
+    chainWrap.style.display = 'none';
+  }
+  editParentSel.onchange = function() {
+    chainWrap.style.display = this.value ? 'flex' : 'none';
+  };
   document.getElementById('edit-modal').classList.add('open');
   setTimeout(function() { document.getElementById('edit-name').focus(); }, 100);
 }
@@ -1092,16 +1172,25 @@ function submitEdit() {
   var t = tasks.find(function(x) { return String(x.id) === String(id); });
   if (!t) return;
   var team = document.getElementById('edit-team').value.trim();
-  t.name    = name;
-  t.cat     = document.getElementById('edit-cat').value;
-  t.owner   = editOwnerMode;
-  t.person  = document.getElementById('edit-person').value.trim() || '진이';
-  t.team    = team;
-  t.imp     = document.getElementById('edit-imp').value;
-  t.urg     = document.getElementById('edit-urg').value;
-  t.due     = document.getElementById('edit-due').value || TODAY;
-  t.link    = document.getElementById('edit-link').value.trim();
-  t.memo    = document.getElementById('edit-memo').value.trim();
+  var newParentId = document.getElementById('edit-parent').value ? parseInt(document.getElementById('edit-parent').value) : null;
+  var newChainType = newParentId ? document.getElementById('edit-chain').value : null;
+  t.name      = name;
+  t.cat       = document.getElementById('edit-cat').value;
+  t.owner     = editOwnerMode;
+  t.person    = document.getElementById('edit-person').value.trim() || '진이';
+  t.team      = team;
+  t.imp       = document.getElementById('edit-imp').value;
+  t.urg       = document.getElementById('edit-urg').value;
+  t.due       = document.getElementById('edit-due').value || TODAY;
+  t.link      = document.getElementById('edit-link').value.trim();
+  t.memo      = document.getElementById('edit-memo').value.trim();
+  t.parentId  = newParentId;
+  t.chainType = newChainType;
+  // 새 상위 과제가 있으면 펼치기
+  if (newParentId) {
+    var p = tasks.find(function(x) { return x.id === newParentId; });
+    if (p) p.expanded = true;
+  }
   // 구글 시트 업데이트
   if (connected) {
     fetch(SURL, { method: 'POST', body: JSON.stringify({
@@ -1302,9 +1391,12 @@ function renderArchive() {
   var y = archYear, m = archMonth;
   var pref = y + '-' + String(m).padStart(2, '0');
   document.getElementById('arch-title').textContent = y + '년 ' + m + '월';
-  // 마감일 또는 완료일이 해당 월인 과제 모두 포함
+  // 마감일 또는 완료일이 해당 월인 과제 모두 포함 (완료 과제는 due 기준도 포함)
   var mt = tasks.filter(function(t) {
-    return t.due.startsWith(pref) || (t.doneAt && t.doneAt.startsWith(pref));
+    if (!t.due) return false;
+    if (t.due.startsWith(pref)) return true;
+    if (t.done && t.doneAt && t.doneAt.startsWith(pref)) return true;
+    return false;
   });
   var done = mt.filter(function(t) { return t.done; }), active = mt.filter(function(t) { return !t.done; });
   var rate = mt.length ? Math.round(done.length / mt.length * 100) : 0;
